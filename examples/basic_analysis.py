@@ -9,7 +9,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import xarray as xr
+
+# Set seaborn style for beautiful plots
+sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 
 def create_synthetic_model_data() -> xr.Dataset:
@@ -159,6 +163,15 @@ def compute_statistics(paired_ds: xr.Dataset) -> dict:
     return stats
 
 
+def save_figure(fig: plt.Figure, output_path: Path) -> None:
+    """Save figure as both PNG (300 DPI) and PDF."""
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+    print(f"Saved: {pdf_path}")
+
+
 def plot_timeseries(paired_ds: xr.Dataset, output_path: Path) -> None:
     """Create time series plot."""
     fig, ax = plt.subplots(figsize=(12, 5))
@@ -167,19 +180,17 @@ def plot_timeseries(paired_ds: xr.Dataset, output_path: Path) -> None:
     obs_mean = paired_ds["obs_o3"].mean(dim="site")
     model_mean = paired_ds["model_o3"].mean(dim="site")
 
-    ax.plot(paired_ds["time"], obs_mean, "b-", label="Observations", linewidth=1.5)
-    ax.plot(paired_ds["time"], model_mean, "r-", label="Model", linewidth=1.5)
+    ax.plot(paired_ds["time"], obs_mean, label="Observations", linewidth=1.5, color=sns.color_palette()[0])
+    ax.plot(paired_ds["time"], model_mean, label="Model", linewidth=1.5, color=sns.color_palette()[3])
 
     ax.set_xlabel("Time")
-    ax.set_ylabel("O3 (ppbv)")
+    ax.set_ylabel("O$_3$ (ppbv)")
     ax.set_title("Time Series Comparison (All Sites Mean)")
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.legend(frameon=True, fancybox=True, shadow=True)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150)
+    save_figure(fig, output_path)
     plt.close(fig)
-    print(f"Saved: {output_path}")
 
 
 def plot_scatter(paired_ds: xr.Dataset, output_path: Path) -> None:
@@ -189,30 +200,29 @@ def plot_scatter(paired_ds: xr.Dataset, output_path: Path) -> None:
     obs = paired_ds["obs_o3"].values.flatten()
     model = paired_ds["model_o3"].values.flatten()
 
-    ax.scatter(obs, model, alpha=0.3, s=5)
+    ax.scatter(obs, model, alpha=0.4, s=8, color=sns.color_palette()[0], edgecolor="none")
 
     # 1:1 line
     lims = [0, max(obs.max(), model.max()) * 1.1]
-    ax.plot(lims, lims, "k--", label="1:1", linewidth=1)
+    ax.plot(lims, lims, "k--", label="1:1", linewidth=1.5)
 
     # Linear regression
     mask = ~(np.isnan(obs) | np.isnan(model))
     coeffs = np.polyfit(obs[mask], model[mask], 1)
-    ax.plot(lims, np.polyval(coeffs, lims), "r-", label=f"Fit: y={coeffs[0]:.2f}x+{coeffs[1]:.1f}")
+    ax.plot(lims, np.polyval(coeffs, lims), color=sns.color_palette()[3],
+            linewidth=2, label=f"Fit: y={coeffs[0]:.2f}x+{coeffs[1]:.1f}")
 
-    ax.set_xlabel("Observed O3 (ppbv)")
-    ax.set_ylabel("Modeled O3 (ppbv)")
+    ax.set_xlabel("Observed O$_3$ (ppbv)")
+    ax.set_ylabel("Modeled O$_3$ (ppbv)")
     ax.set_title("Scatter Plot")
     ax.set_xlim(lims)
     ax.set_ylim(lims)
-    ax.legend()
+    ax.legend(frameon=True, fancybox=True, shadow=True)
     ax.set_aspect("equal")
-    ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150)
+    save_figure(fig, output_path)
     plt.close(fig)
-    print(f"Saved: {output_path}")
 
 
 def main():

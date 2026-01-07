@@ -9,7 +9,11 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
 import xarray as xr
+
+# Set seaborn style for beautiful plots
+sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 
 def create_paired_surface_data() -> xr.Dataset:
@@ -133,6 +137,15 @@ def print_statistics_table(stats_dict: dict) -> None:
     print("=" * 80)
 
 
+def save_figure(fig: plt.Figure, output_path: Path) -> None:
+    """Save figure as both PNG (300 DPI) and PDF."""
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+    print(f"Saved: {pdf_path}")
+
+
 def create_multi_panel_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
     """Create multi-panel scatter plot for all variables."""
     variables = [
@@ -142,6 +155,7 @@ def create_multi_panel_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
     ]
 
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.5))
+    colors = sns.color_palette()
 
     for ax, (var, label) in zip(axes, variables):
         obs = paired_ds[f"obs_{var}"].values.flatten()
@@ -152,43 +166,40 @@ def create_multi_panel_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
         obs, model = obs[mask], model[mask]
 
         # Scatter
-        ax.scatter(obs, model, alpha=0.2, s=3, c="steelblue")
+        ax.scatter(obs, model, alpha=0.3, s=5, color=colors[0], edgecolor="none")
 
         # 1:1 line
         lims = [0, max(obs.max(), model.max()) * 1.05]
-        ax.plot(lims, lims, "k--", linewidth=1, label="1:1")
+        ax.plot(lims, lims, "k--", linewidth=1.5, label="1:1")
 
         # Regression
         coeffs = np.polyfit(obs, model, 1)
         r = np.corrcoef(obs, model)[0, 1]
         mb = np.mean(model - obs)
 
-        ax.plot(lims, np.polyval(coeffs, lims), "r-", linewidth=1.5)
+        ax.plot(lims, np.polyval(coeffs, lims), color=colors[3], linewidth=2)
 
         # Stats annotation
         text = f"N = {len(obs)}\nR = {r:.3f}\nMB = {mb:.2f}"
         ax.text(0.05, 0.95, text, transform=ax.transAxes, fontsize=9,
                 verticalalignment="top", fontfamily="monospace",
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8))
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.9, edgecolor="gray"))
 
         ax.set_xlabel(f"Observed {label}")
         ax.set_ylabel(f"Modeled {label}")
         ax.set_xlim(lims)
         ax.set_ylim(lims)
         ax.set_aspect("equal")
-        ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150)
+    save_figure(fig, output_path)
     plt.close(fig)
-    print(f"Saved: {output_path}")
 
 
 def create_diurnal_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
     """Create diurnal cycle plot for O3."""
-    from davinci_monet.plots import get_plotter
-
     fig, ax = plt.subplots(figsize=(10, 5))
+    colors = sns.color_palette()
 
     # Group by hour
     obs = paired_ds["obs_o3"]
@@ -199,20 +210,20 @@ def create_diurnal_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
 
     hours = obs_hourly.hour.values
 
-    ax.plot(hours, obs_hourly, "b-o", label="Observations", linewidth=2, markersize=6)
-    ax.plot(hours, model_hourly, "r-s", label="Model", linewidth=2, markersize=6)
+    ax.plot(hours, obs_hourly, "-o", label="Observations", linewidth=2, markersize=7,
+            color=colors[0], markeredgecolor="white", markeredgewidth=1)
+    ax.plot(hours, model_hourly, "-s", label="Model", linewidth=2, markersize=7,
+            color=colors[3], markeredgecolor="white", markeredgewidth=1)
 
     ax.set_xlabel("Hour of Day (UTC)")
     ax.set_ylabel("O$_3$ (ppbv)")
     ax.set_title("Diurnal Cycle of Ozone")
     ax.set_xticks(range(0, 24, 3))
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.legend(frameon=True, fancybox=True, shadow=True)
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150)
+    save_figure(fig, output_path)
     plt.close(fig)
-    print(f"Saved: {output_path}")
 
 
 def create_spatial_bias_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
@@ -236,9 +247,12 @@ def create_spatial_bias_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
 
     ax.set_extent([-125, -65, 24, 50], crs=ccrs.PlateCarree())
-    ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
+    ax.add_feature(cfeature.LAND, facecolor="#f0f0f0")
+    ax.add_feature(cfeature.OCEAN, facecolor="#e6f3ff")
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
     ax.add_feature(cfeature.BORDERS, linewidth=0.5)
     ax.add_feature(cfeature.STATES, linewidth=0.3, linestyle=":")
+    ax.add_feature(cfeature.LAKES, facecolor="#e6f3ff", edgecolor="gray", linewidth=0.3)
 
     # Scatter plot with bias as color
     vmax = max(abs(bias.min()), abs(bias.max()))
@@ -247,21 +261,21 @@ def create_spatial_bias_plot(paired_ds: xr.Dataset, output_path: Path) -> None:
         c=bias.values,
         cmap="RdBu_r",
         vmin=-vmax, vmax=vmax,
-        s=80,
+        s=100,
         edgecolor="k",
-        linewidth=0.5,
+        linewidth=0.8,
         transform=ccrs.PlateCarree(),
+        zorder=5,
     )
 
     cbar = plt.colorbar(sc, ax=ax, orientation="horizontal", pad=0.05, shrink=0.6)
     cbar.set_label("O$_3$ Bias (ppbv)")
 
-    ax.set_title("Mean O$_3$ Model Bias by Site")
+    ax.set_title("Mean O$_3$ Model Bias by Site", fontsize=14, fontweight="bold")
 
     plt.tight_layout()
-    fig.savefig(output_path, dpi=150)
+    save_figure(fig, output_path)
     plt.close(fig)
-    print(f"Saved: {output_path}")
 
 
 def main():
