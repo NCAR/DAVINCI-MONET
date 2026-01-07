@@ -142,13 +142,30 @@ def pair_gridded_with_model(
     xr.Dataset
         Paired dataset on common grid
     """
-    strategy = GridStrategy()
-    paired = strategy.pair(
-        model,
-        gridded,
-        regrid_to="obs",
-        horizontal_method="nearest",
+    # For L3 daily data, we average the model over time first
+    # then regrid to the L3 grid (simpler than using GridStrategy
+    # which has time alignment issues when times don't overlap)
+    model_mean = model.mean(dim="time")
+
+    # Regrid model to L3 grid
+    model_regrid = model_mean.interp(
+        lat=gridded.lat.values,
+        lon=gridded.lon.values,
+        method="nearest",
     )
+
+    # Build paired dataset
+    paired = xr.Dataset(
+        {
+            "NO2": gridded["NO2"].isel(time=0),
+            "model_NO2": model_regrid["NO2"],
+        },
+        coords={
+            "lat": gridded.lat,
+            "lon": gridded.lon,
+        },
+    )
+
     return paired
 
 
