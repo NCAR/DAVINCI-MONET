@@ -23,14 +23,34 @@ from davinci_monet.observations.surface.openaq import OpenAQReader, open_openaq
 # Aircraft observation readers
 from davinci_monet.observations.aircraft.icartt import ICARTTReader, open_icartt
 
-# Satellite observation readers
+# Satellite observation readers - L2 swath
 from davinci_monet.observations.satellite.tropomi import TROPOMIReader, open_tropomi
+from davinci_monet.observations.satellite.tempo_l2_no2 import (
+    TEMPOL2NO2Reader,
+    open_tempo_l2_no2,
+)
+from davinci_monet.observations.satellite.modis_l2_aod import (
+    MODISL2AODReader,
+    open_modis_l2_aod,
+)
+
+# Satellite observation readers - L3 gridded
 from davinci_monet.observations.satellite.goes_l3_aod import (
     GOESL3AODReader,
     GOESReader,  # Backward compatibility alias
     open_goes_l3_aod,
     open_goes,  # Backward compatibility alias (deprecated)
 )
+from davinci_monet.observations.satellite.mopitt_l3_co import (
+    MOPITTL3COReader,
+    open_mopitt_l3_co,
+)
+from davinci_monet.observations.satellite.omps_l3_o3 import (
+    OMPSL3O3Reader,
+    open_omps_l3_o3,
+)
+
+# Generic satellite readers
 from davinci_monet.observations.satellite.generic_l2 import (
     GenericL2Reader,
     open_satellite_l2,
@@ -64,15 +84,25 @@ __all__ = [
     # Aircraft readers
     "ICARTTReader",
     "open_icartt",
-    # Satellite readers
+    # Satellite L2 readers
     "TROPOMIReader",
+    "open_tropomi",
+    "TEMPOL2NO2Reader",
+    "open_tempo_l2_no2",
+    "MODISL2AODReader",
+    "open_modis_l2_aod",
+    # Satellite L3 readers
     "GOESL3AODReader",
     "GOESReader",  # Backward compatibility
-    "GenericL2Reader",
-    "GenericL3Reader",
-    "open_tropomi",
     "open_goes_l3_aod",
     "open_goes",  # Backward compatibility (deprecated)
+    "MOPITTL3COReader",
+    "open_mopitt_l3_co",
+    "OMPSL3O3Reader",
+    "open_omps_l3_o3",
+    # Generic satellite readers
+    "GenericL2Reader",
+    "GenericL3Reader",
     "open_satellite_l2",
     "open_satellite_l3",
     # Sonde readers

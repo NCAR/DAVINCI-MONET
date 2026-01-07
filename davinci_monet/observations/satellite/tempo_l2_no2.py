@@ -1,0 +1,287 @@
+"""TEMPO L2 NO2 observation reader.
+
+This module provides the TEMPOL2NO2Reader class for reading TEMPO
+(Tropospheric Emissions: Monitoring of Pollution) L2 NO2 products.
+
+TEMPO is a geostationary satellite instrument over North America providing
+hourly observations of air quality.
+
+Note
+----
+This reader requires monetio.sat._tempo_l2_no2_mm for full functionality.
+Without monetio, it falls back to basic xarray reading which may not handle
+all TEMPO-specific features.
+"""
+
+from __future__ import annotations
+
+import warnings
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+import xarray as xr
+
+from davinci_monet.core.exceptions import DataNotFoundError
+from davinci_monet.core.protocols import DataGeometry
+from davinci_monet.core.registry import observation_registry
+from davinci_monet.observations.base import ObservationData, create_observation_data
+
+
+# Standard variable name mappings for TEMPO NO2
+TEMPO_NO2_VARIABLE_MAPPING: dict[str, str] = {
+    "no2": "nitrogendioxide_tropospheric_column",
+    "no2_total": "nitrogendioxide_total_column",
+    "qa_value": "qa_value",
+    "sza": "solar_zenith_angle",
+    "vza": "viewing_zenith_angle",
+}
+
+
+@observation_registry.register("tempo_l2_no2")
+class TEMPOL2NO2Reader:
+    """Reader for TEMPO L2 NO2 satellite observations.
+
+    Reads TEMPO L2 NO2 data from NetCDF files. TEMPO provides hourly
+    observations over North America from geostationary orbit.
+
+    Data is returned as swath geometry with appropriate dimensions.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, the reader falls
+    back to basic xarray which may not handle TEMPO-specific features
+    correctly.
+
+    Examples
+    --------
+    >>> reader = TEMPOL2NO2Reader()
+    >>> ds = reader.open(["TEMPO_NO2_L2_*.nc"])
+    """
+
+    @property
+    def name(self) -> str:
+        """Return reader name."""
+        return "tempo_l2_no2"
+
+    def open(
+        self,
+        file_paths: Sequence[str | Path],
+        variables: Sequence[str] | None = None,
+        *,
+        qa_threshold: float | None = 0.75,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Open TEMPO L2 NO2 observation files.
+
+        Parameters
+        ----------
+        file_paths
+            Paths to TEMPO L2 NO2 files.
+        variables
+            Variables to load. If None, loads main product variables.
+        qa_threshold
+            Quality assurance threshold (0-1). Pixels below threshold
+            are masked. Set to None to disable filtering.
+        **kwargs
+            Additional options.
+
+        Returns
+        -------
+        xr.Dataset
+            TEMPO observations with swath dimensions.
+        """
+        file_list = [Path(f) for f in file_paths]
+
+        if not file_list:
+            raise DataNotFoundError("No TEMPO files provided")
+
+        missing = [f for f in file_list if not f.exists()]
+        if missing:
+            raise DataNotFoundError(f"TEMPO files not found: {missing}")
+
+        # Try monetio first
+        try:
+            ds = self._open_with_monetio(file_list, variables, **kwargs)
+        except ImportError:
+            warnings.warn(
+                "monetio not available, using basic xarray reader. "
+                "TEMPO-specific handling may be incomplete.",
+                UserWarning,
+            )
+            ds = self._open_with_xarray(file_list, variables, **kwargs)
+
+        # Apply QA filtering
+        if qa_threshold is not None:
+            ds = self._apply_qa_filter(ds, qa_threshold)
+
+        return self._standardize_dataset(ds)
+
+    def _open_with_monetio(
+        self,
+        file_paths: list[Path],
+        variables: Sequence[str] | None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Open TEMPO files using monetio."""
+        import monetio.sat._tempo_l2_no2_mm as tempo_mod
+
+        files = [str(f) for f in file_paths]
+
+        if len(files) == 1:
+            ds: xr.Dataset = tempo_mod.open_dataset(files[0], **kwargs)
+        else:
+            ds_list = []
+            for f in files:
+                try:
+                    ds_i: xr.Dataset = tempo_mod.open_dataset(f, **kwargs)
+                    ds_list.append(ds_i)
+                except Exception as e:
+                    warnings.warn(f"Failed to open {f}: {e}", UserWarning)
+                    continue
+
+            if not ds_list:
+                raise DataNotFoundError("No valid TEMPO data found")
+
+            ds = xr.concat(ds_list, dim="time")
+
+        if variables is not None:
+            available = [v for v in variables if v in ds.data_vars]
+            if available:
+                ds = ds[available]
+
+        return ds
+
+    def _open_with_xarray(
+        self,
+        file_paths: list[Path],
+        variables: Sequence[str] | None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Open TEMPO files using xarray."""
+        ds_list = []
+        for fpath in file_paths:
+            try:
+                # TEMPO files may have nested groups
+                ds = xr.open_dataset(str(fpath), group="product", **kwargs)
+                ds_list.append(ds)
+            except Exception:
+                try:
+                    ds = xr.open_dataset(str(fpath), **kwargs)
+                    ds_list.append(ds)
+                except Exception as e:
+                    warnings.warn(f"Failed to open {fpath}: {e}", UserWarning)
+                    continue
+
+        if not ds_list:
+            raise DataNotFoundError("No valid TEMPO data found")
+
+        if len(ds_list) > 1:
+            ds = xr.concat(ds_list, dim="time")
+        else:
+            ds = ds_list[0]
+
+        if variables is not None:
+            available = [v for v in variables if v in ds.data_vars]
+            if available:
+                ds = ds[available]
+
+        return ds
+
+    def _apply_qa_filter(
+        self, ds: xr.Dataset, qa_threshold: float
+    ) -> xr.Dataset:
+        """Apply QA value filtering to dataset."""
+        qa_var = None
+        for name in ["qa_value", "quality_flag", "main_data_quality_flag"]:
+            if name in ds.data_vars:
+                qa_var = name
+                break
+
+        if qa_var is not None:
+            mask = ds[qa_var] >= qa_threshold
+            for var in ds.data_vars:
+                if var != qa_var:
+                    ds[var] = ds[var].where(mask)
+
+        return ds
+
+    def _standardize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+        """Standardize TEMPO dataset dimensions and coordinates."""
+        coord_renames: dict[str, str] = {}
+
+        if "latitude" in ds.coords and "lat" not in ds.coords:
+            coord_renames["latitude"] = "lat"
+        if "longitude" in ds.coords and "lon" not in ds.coords:
+            coord_renames["longitude"] = "lon"
+
+        if coord_renames:
+            ds = ds.rename(coord_renames)
+
+        ds.attrs["geometry"] = DataGeometry.SWATH.value
+
+        return ds
+
+    def get_variable_mapping(self) -> Mapping[str, str]:
+        """Return TEMPO NO2 variable name mapping."""
+        return TEMPO_NO2_VARIABLE_MAPPING
+
+
+def open_tempo_l2_no2(
+    files: str | Path | Sequence[str | Path],
+    variables: Sequence[str] | None = None,
+    label: str = "tempo_no2",
+    qa_threshold: float | None = 0.75,
+    **kwargs: Any,
+) -> ObservationData:
+    """Open TEMPO L2 NO2 observation data.
+
+    Parameters
+    ----------
+    files
+        File path(s) or glob pattern.
+    variables
+        Variables to load.
+    label
+        Observation label.
+    qa_threshold
+        QA filtering threshold.
+    **kwargs
+        Additional reader options.
+
+    Returns
+    -------
+    ObservationData
+        TEMPO observation data container with SWATH geometry.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, TEMPO-specific
+    handling may be incomplete.
+    """
+    from glob import glob
+
+    reader = TEMPOL2NO2Reader()
+
+    if isinstance(files, (str, Path)):
+        file_str = str(files)
+        if "*" in file_str or "?" in file_str:
+            file_list = sorted(glob(file_str))
+            if not file_list:
+                raise DataNotFoundError(f"No files match pattern: {files}")
+            file_paths: Sequence[str | Path] = file_list
+        else:
+            file_paths = [files]
+    else:
+        file_paths = list(files)
+
+    ds = reader.open(file_paths, variables, qa_threshold=qa_threshold, **kwargs)
+
+    obs = create_observation_data(
+        label=label,
+        obs_type="satellite",
+        data=ds,
+        variables=dict.fromkeys(variables) if variables else {},
+    )
+    obs.geometry = DataGeometry.SWATH
+
+    return obs

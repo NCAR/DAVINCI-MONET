@@ -22,6 +22,10 @@ import davinci_monet.observations.surface.openaq  # noqa: F401
 import davinci_monet.observations.aircraft.icartt  # noqa: F401
 import davinci_monet.observations.satellite.tropomi  # noqa: F401
 import davinci_monet.observations.satellite.goes_l3_aod  # noqa: F401
+import davinci_monet.observations.satellite.tempo_l2_no2  # noqa: F401
+import davinci_monet.observations.satellite.modis_l2_aod  # noqa: F401
+import davinci_monet.observations.satellite.mopitt_l3_co  # noqa: F401
+import davinci_monet.observations.satellite.omps_l3_o3  # noqa: F401
 import davinci_monet.observations.sonde.ozonesonde  # noqa: F401
 
 
@@ -210,6 +214,10 @@ class TestObservationRegistry:
         """Test that satellite readers are registered."""
         assert "tropomi" in observation_registry
         assert "goes_l3_aod" in observation_registry
+        assert "tempo_l2_no2" in observation_registry
+        assert "modis_l2_aod" in observation_registry
+        assert "mopitt_l3_co" in observation_registry
+        assert "omps_l3_o3" in observation_registry
 
     def test_sonde_readers_registered(self):
         """Test that sonde readers are registered."""
@@ -472,6 +480,110 @@ class TestGOESL3AODReader:
         from davinci_monet.observations.satellite.goes_l3_aod import GOESReader
         reader = GOESReader()
         assert reader.name == "goes_l3_aod"
+
+
+class TestTEMPOL2NO2Reader:
+    """Test TEMPO L2 NO2 reader."""
+
+    def test_reader_name(self):
+        """Test reader name."""
+        from davinci_monet.observations.satellite.tempo_l2_no2 import TEMPOL2NO2Reader
+        reader = TEMPOL2NO2Reader()
+        assert reader.name == "tempo_l2_no2"
+
+    def test_variable_mapping(self):
+        """Test variable mapping."""
+        from davinci_monet.observations.satellite.tempo_l2_no2 import TEMPOL2NO2Reader
+        reader = TEMPOL2NO2Reader()
+        mapping = reader.get_variable_mapping()
+        assert "no2" in mapping
+
+    def test_standardization(self):
+        """Test dataset standardization."""
+        from davinci_monet.observations.satellite.tempo_l2_no2 import TEMPOL2NO2Reader
+
+        ds = create_synthetic_satellite_swath()
+        reader = TEMPOL2NO2Reader()
+        result = reader._standardize_dataset(ds)
+        assert result.attrs.get("geometry") == DataGeometry.SWATH.value
+
+
+class TestMODISL2AODReader:
+    """Test MODIS L2 AOD reader."""
+
+    def test_reader_name(self):
+        """Test reader name."""
+        from davinci_monet.observations.satellite.modis_l2_aod import MODISL2AODReader
+        reader = MODISL2AODReader()
+        assert reader.name == "modis_l2_aod"
+
+    def test_variable_mapping(self):
+        """Test variable mapping."""
+        from davinci_monet.observations.satellite.modis_l2_aod import MODISL2AODReader
+        reader = MODISL2AODReader()
+        mapping = reader.get_variable_mapping()
+        assert "aod" in mapping
+
+    def test_standardization(self):
+        """Test dataset standardization."""
+        from davinci_monet.observations.satellite.modis_l2_aod import MODISL2AODReader
+
+        ds = create_synthetic_satellite_swath()
+        reader = MODISL2AODReader()
+        result = reader._standardize_dataset(ds)
+        assert result.attrs.get("geometry") == DataGeometry.SWATH.value
+
+
+class TestMOPITTL3COReader:
+    """Test MOPITT L3 CO reader."""
+
+    def test_reader_name(self):
+        """Test reader name."""
+        from davinci_monet.observations.satellite.mopitt_l3_co import MOPITTL3COReader
+        reader = MOPITTL3COReader()
+        assert reader.name == "mopitt_l3_co"
+
+    def test_variable_mapping(self):
+        """Test variable mapping."""
+        from davinci_monet.observations.satellite.mopitt_l3_co import MOPITTL3COReader
+        reader = MOPITTL3COReader()
+        mapping = reader.get_variable_mapping()
+        assert "co" in mapping
+
+    def test_standardization(self):
+        """Test dataset standardization."""
+        from davinci_monet.observations.satellite.mopitt_l3_co import MOPITTL3COReader
+
+        ds = create_synthetic_gridded_obs()
+        reader = MOPITTL3COReader()
+        result = reader._standardize_dataset(ds)
+        assert result.attrs.get("geometry") == DataGeometry.GRID.value
+
+
+class TestOMPSL3O3Reader:
+    """Test OMPS L3 O3 reader."""
+
+    def test_reader_name(self):
+        """Test reader name."""
+        from davinci_monet.observations.satellite.omps_l3_o3 import OMPSL3O3Reader
+        reader = OMPSL3O3Reader()
+        assert reader.name == "omps_l3_o3"
+
+    def test_variable_mapping(self):
+        """Test variable mapping."""
+        from davinci_monet.observations.satellite.omps_l3_o3 import OMPSL3O3Reader
+        reader = OMPSL3O3Reader()
+        mapping = reader.get_variable_mapping()
+        assert "o3" in mapping
+
+    def test_standardization(self):
+        """Test dataset standardization."""
+        from davinci_monet.observations.satellite.omps_l3_o3 import OMPSL3O3Reader
+
+        ds = create_synthetic_gridded_obs()
+        reader = OMPSL3O3Reader()
+        result = reader._standardize_dataset(ds)
+        assert result.attrs.get("geometry") == DataGeometry.GRID.value
 
 
 # =============================================================================
