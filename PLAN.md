@@ -251,15 +251,15 @@ Each observation reader tags its data with geometry type for the pairing engine.
          │   based on geometry   │
          └───────────┬───────────┘
                      │
-         ┌───────────┴───────────┐
-         │   Strategy dispatch   │
-         ├───────────────────────┤
-         │ point   → PointPairer │
-         │ track   → TrackPairer │
+         ┌───────────┴────────────┐
+         │   Strategy dispatch    │
+         ├────────────────────────┤
+         │ point   → PointPairer  │
+         │ track   → TrackPairer  │
          │ profile → ProfilePairer│
-         │ swath   → SwathPairer │
-         │ grid    → GridPairer  │
-         └───────────┬───────────┘
+         │ swath   → SwathPairer  │
+         │ grid    → GridPairer   │
+         └───────────┬────────────┘
                      │
                      ▼
          ┌───────────────────────┐
