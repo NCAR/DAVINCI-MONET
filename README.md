@@ -25,9 +25,9 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 | **Satellite L2** | TROPOMI | Sentinel-5P, daily global | NO2, O3, CO, HCHO, SO2 |
 | | TEMPO | Geostationary, hourly N. America | NO2 |
 | | MODIS | Terra/Aqua, daily global | AOD |
-| **Satellite L3** | GOES | GOES-R/S, 5-min N. America | AOD |
-| | MOPITT | Terra, daily global | CO |
+| **Satellite L3** | MOPITT | Terra, daily global | CO |
 | | OMPS | Suomi-NPP, daily global | Total O3 |
+| | GOES | GOES-R/S, 5-min N. America | AOD |
 | **Sonde** | Ozonesonde | Balloon profiles | O3 vertical profiles |
 
 ## Quick Start
