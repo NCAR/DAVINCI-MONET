@@ -43,6 +43,25 @@ result = runner.run(PipelineContext(config=config))
 print(f"Success: {result.success}")
 ```
 
+## Examples
+
+The `examples/` directory contains complete working examples for different observation types:
+
+| Example | Description | Plots |
+|---------|-------------|-------|
+| [`surface_evaluation.py`](examples/surface_evaluation.py) | Surface station evaluation | Scatter, diurnal cycle, spatial bias |
+| [`aircraft_evaluation.py`](examples/aircraft_evaluation.py) | Aircraft track evaluation | Flight path, curtain, scatter, time series, vertical profile |
+| [`satellite_evaluation.py`](examples/satellite_evaluation.py) | Satellite L2/L3 evaluation | Swath footprint, bias maps, scatter density, histograms |
+| [`sonde_evaluation.py`](examples/sonde_evaluation.py) | Ozonesonde profile evaluation | Launch map, profiles, mean/bias, layer statistics |
+| [`all_plot_types.py`](examples/all_plot_types.py) | All 10 plot types demo | Time series, diurnal, scatter, Taylor, box, spatial, curtain, scorecard |
+
+Run any example:
+```bash
+python examples/aircraft_evaluation.py
+```
+
+Output is saved to `examples/output/<name>/` as both PNG (300 DPI) and PDF.
+
 ## Documentation
 
 See the [Wiki](../../wiki) for full documentation:
@@ -51,6 +70,7 @@ See the [Wiki](../../wiki) for full documentation:
 - [Configuration](../../wiki/Configuration) - YAML configuration guide
 - [CLI Reference](../../wiki/CLI-Reference) - Command-line interface
 - [API Reference](../../wiki/API-Reference) - Python API documentation
+- [Examples](../../wiki/Examples) - Detailed example walkthroughs
 - [Migration Guide](../../wiki/Migration-Guide) - Migrating from MELODIES-MONET
 
 ## Architecture
