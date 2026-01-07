@@ -284,8 +284,8 @@ def main():
     print("=" * 45)
 
     # Create output directory
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path("examples/output/surface")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Create synthetic paired data
     print("\n1. Creating paired surface data...")

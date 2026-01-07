@@ -158,8 +158,8 @@ def main():
     from pathlib import Path
     from davinci_monet.stats import write_statistics_csv
 
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path("examples/output/custom_stats")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Export overall stats to CSV
     write_statistics_csv(stats_df, output_dir / "overall_stats.csv")

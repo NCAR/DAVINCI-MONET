@@ -231,8 +231,8 @@ def main():
     print("=" * 40)
 
     # Create output directory
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path("examples/output/basic")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate synthetic data
     print("\n1. Creating synthetic data...")

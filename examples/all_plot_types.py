@@ -555,7 +555,7 @@ def main():
     print("DAVINCI-MONET: All Plot Types Demo")
     print("=" * 50)
 
-    output_dir = Path("output/all_plots")
+    output_dir = Path("examples/output/all_plots")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("\nCreating synthetic data...")
