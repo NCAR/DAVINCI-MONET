@@ -9,7 +9,7 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 - **Unified Pairing Engine** - Single pairing system based on data geometry (point, track, profile, swath, grid)
 - **Multiple Model Support** - CMAQ, WRF-Chem, UFS, CESM, and generic NetCDF
 - **27 Statistical Metrics** - Bias, error, correlation, and agreement metrics with groupby support
-- **10 Plot Types** - Time series, scatter, Taylor diagrams, spatial maps, and more
+- **Multiple Plot Types** - Time series, scatter, Taylor diagrams, spatial maps, curtain, and more
 - **Type-Safe Configuration** - Pydantic-validated YAML configs with backward compatibility
 - **Full Test Coverage** - 745+ tests with synthetic data generation
 
@@ -21,6 +21,7 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 | | AQS | EPA Air Quality System | O3, PM2.5, NO2, SO2, CO |
 | | AERONET | Aerosol Robotic Network | AOD, Angstrom exponent |
 | | OpenAQ | Global air quality platform | O3, PM2.5, NO2, SO2, CO |
+| **Sonde** | Ozonesonde | Balloon profiles | O3 vertical profiles |
 | **Aircraft** | ICARTT | NASA/NOAA flight campaigns | Multiple trace gases |
 | **Satellite L2** | TROPOMI | Sentinel-5P, daily global | NO2, O3, CO, HCHO, SO2 |
 | | TEMPO | Geostationary, hourly N. America | NO2 |
@@ -28,7 +29,6 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 | **Satellite L3** | MOPITT | Terra, daily global | CO |
 | | OMPS | Suomi-NPP, daily global | Total O3 |
 | | GOES | GOES-R/S, 5-min N. America | AOD |
-| **Sonde** | Ozonesonde | Balloon profiles | O3 vertical profiles |
 
 ## Quick Start
 
