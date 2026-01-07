@@ -255,13 +255,39 @@ Each observation reader tags its data with geometry type for the pairing engine.
 ---
 
 ## Phase 8: Pipeline
-**Status: PENDING**
+**Status: COMPLETE**
 
-- [ ] Implement `pipeline/runner.py` - PipelineRunner (replaces analysis class)
-- [ ] Implement `pipeline/stages.py` - Stage definitions
-- [ ] Implement `pipeline/parallel.py` - Parallel execution
-- [ ] Implement `io/readers.py` - File readers
-- [ ] Implement `io/writers.py` - File writers (netCDF, pickle)
+- [x] Implement `pipeline/stages.py` - Stage definitions
+  - Stage protocol and BaseStage abstract class
+  - StageStatus enum, StageResult dataclass
+  - PipelineContext for data flow between stages
+  - Concrete stages: LoadModelsStage, LoadObservationsStage, PairingStage
+  - Concrete stages: StatisticsStage, PlottingStage, SaveResultsStage
+  - create_standard_pipeline() factory function
+- [x] Implement `pipeline/runner.py` - PipelineRunner (replaces analysis class)
+  - PipelineRunner: Orchestrates stage execution with fail-fast option
+  - PipelineResult: Tracks success, stage results, timing
+  - PipelineBuilder: Fluent API for pipeline construction
+  - run_analysis(): Convenience function for config-based runs
+  - Hook support: on_start, on_stage_start, on_stage_end, on_end
+- [x] Implement `pipeline/parallel.py` - Parallel execution
+  - ParallelExecutor: Thread/process pool-based parallel execution
+  - ParallelResult: Generic result container with errors tracking
+  - ParallelPairingExecutor: Parallel model-observation pairing
+  - parallel_process_files(): Convenience for file processing
+- [x] Implement `io/readers.py` - File readers
+  - read_dataset(): Auto-format detection for NetCDF, pickle, grib
+  - read_mfdataset(): Multi-file dataset reading with glob support
+  - read_pickle(), read_csv(), read_csv_to_xarray()
+  - read_icartt(): ICARTT format with basic parser fallback
+  - read_saved_analysis(): Load saved analysis results
+- [x] Implement `io/writers.py` - File writers (NetCDF, pickle, CSV)
+  - write_dataset(): Auto-format detection for NetCDF, pickle, zarr
+  - write_pickle(), write_csv()
+  - write_paired_data(): Write paired datasets with prefix support
+  - write_statistics(): CSV, JSON, and pickle output
+  - write_analysis_results(): Complete analysis output
+- [x] Write tests (103 tests for pipeline/io, 621 total)
 
 ---
 
