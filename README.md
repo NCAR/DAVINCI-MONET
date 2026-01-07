@@ -2,7 +2,7 @@
 
 **Diagnostic Analysis and Validation Infrastructure for Numerical Chemistry Investigation - Model and ObservatioN Evaluation Toolkit**
 
-A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air quality models against observations. DAVINCI-MONET is a complete rewrite of [MELODIES-MONET](https://github.com/NOAA-CSL/MELODIES-MONET) with improved architecture, full type hints, and comprehensive testing.
+A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air quality models against observations. DAVINCI-MONET is a Claude Code (Opus 4.5) AI assisted full rewrite of [MELODIES-MONET](https://github.com/NOAA-CSL/MELODIES-MONET) with improved architecture, full type hints, and comprehensive testing.
 
 ## Features
 
