@@ -45,9 +45,11 @@ conda create --name davinci-monet -c conda-forge python=3.11 \
 - pytest, pytest-cov - testing
 - black, isort - formatting
 
-## Reference Codebase
+## Related Repositories
 
 **MELODIES-MONET location**: `/Users/fillmore/EarthSystem/MELODIES-MONET`
+
+**Wiki repository**: `/Users/fillmore/EarthSystem/DAVINCI-MONET.wiki`
 
 Key files to reference:
 - `melodies_monet/driver.py` - Main logic (3,116 lines) - decompose this
