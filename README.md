@@ -8,11 +8,11 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 
 - **Unified Pairing Engine** - Single pairing system based on data geometry (point, track, profile, swath, grid)
 - **Multiple Model Support** - CMAQ, WRF-Chem, UFS, CESM, and generic NetCDF
-- **Multiple Observation Types** - Surface (AirNow, AQS, AERONET, OpenAQ), aircraft (ICARTT), satellite (TROPOMI, GOES), sondes
+- **Multiple Observation Types** - Surface (AirNow, AQS, AERONET, OpenAQ), aircraft (ICARTT), satellite (TROPOMI, TEMPO, MODIS, GOES, MOPITT, OMPS), sondes
 - **27 Statistical Metrics** - Bias, error, correlation, and agreement metrics with groupby support
 - **10 Plot Types** - Time series, scatter, Taylor diagrams, spatial maps, and more
 - **Type-Safe Configuration** - Pydantic-validated YAML configs with backward compatibility
-- **Full Test Coverage** - 732+ tests with synthetic data generation
+- **Full Test Coverage** - 745+ tests with synthetic data generation
 
 ## Quick Start
 
