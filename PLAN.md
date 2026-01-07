@@ -312,11 +312,12 @@ Each observation reader tags its data with geometry type for the pairing engine.
 ---
 
 ## Phase 10: Statistics
-**Status: PENDING**
+**Status: COMPLETE**
 
-- [ ] Implement `stats/calculator.py` - Statistics calculator
-- [ ] Implement `stats/metrics.py` - Individual metrics (MB, RMSE, etc.)
-- [ ] Implement `stats/output.py` - Output formatters
+- [x] Implement `stats/metrics.py` - 27 metric classes (bias, error, correlation, etc.)
+- [x] Implement `stats/calculator.py` - StatisticsCalculator with groupby support
+- [x] Implement `stats/output.py` - CSV, JSON, table image output formatters
+- [x] Write tests (39 tests for statistics, 699 total)
 
 ---
 
