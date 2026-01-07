@@ -322,12 +322,22 @@ Each observation reader tags its data with geometry type for the pairing engine.
 ---
 
 ## Phase 11: CLI
-**Status: PENDING**
+**Status: COMPLETE**
 
-- [ ] Implement `cli/app.py` - Main Typer application
-- [ ] Implement `cli/commands/run.py` - Run command
-- [ ] Implement `cli/commands/get_data.py` - Data download commands
-- [ ] Implement `cli/commands/validate.py` - Config validation
+- [x] Implement `cli/app.py` - Main Typer application
+  - Version callback, header display, timer context manager
+  - Global commands: run, validate
+  - Subcommand group: get (for data download)
+- [x] Implement `cli/commands/run.py` - Run command
+  - Execute full analysis pipeline from control file
+  - Stage-by-stage execution with timing
+- [x] Implement `cli/commands/get_data.py` - Data download commands
+  - get aeronet, get airnow, get aqs, get openaq
+  - Common options: dates, output file, compression, workers
+- [x] Implement `cli/commands/validate.py` - Config validation
+  - Version detection, deprecation warnings
+  - Configuration summary display
+- [x] Write tests (33 tests for CLI, 732 total)
 
 ---
 
