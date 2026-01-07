@@ -21,7 +21,7 @@ import davinci_monet.observations.surface.aeronet  # noqa: F401
 import davinci_monet.observations.surface.openaq  # noqa: F401
 import davinci_monet.observations.aircraft.icartt  # noqa: F401
 import davinci_monet.observations.satellite.tropomi  # noqa: F401
-import davinci_monet.observations.satellite.goes  # noqa: F401
+import davinci_monet.observations.satellite.goes_l3_aod  # noqa: F401
 import davinci_monet.observations.sonde.ozonesonde  # noqa: F401
 
 
@@ -209,7 +209,7 @@ class TestObservationRegistry:
     def test_satellite_readers_registered(self):
         """Test that satellite readers are registered."""
         assert "tropomi" in observation_registry
-        assert "goes" in observation_registry
+        assert "goes_l3_aod" in observation_registry
 
     def test_sonde_readers_registered(self):
         """Test that sonde readers are registered."""
@@ -427,31 +427,31 @@ class TestTROPOMIReader:
         assert result.attrs.get("geometry") == DataGeometry.SWATH.value
 
 
-class TestGOESReader:
-    """Test GOES reader."""
+class TestGOESL3AODReader:
+    """Test GOES L3 AOD reader."""
 
     def test_reader_name(self):
         """Test reader name."""
-        from davinci_monet.observations.satellite.goes import GOESReader
-        reader = GOESReader()
-        assert reader.name == "goes"
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESL3AODReader
+        reader = GOESL3AODReader()
+        assert reader.name == "goes_l3_aod"
 
     def test_variable_mapping(self):
         """Test variable mapping."""
-        from davinci_monet.observations.satellite.goes import GOESReader
-        reader = GOESReader()
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESL3AODReader
+        reader = GOESL3AODReader()
         mapping = reader.get_variable_mapping()
         assert "aod" in mapping
 
     def test_open_with_xarray(self):
         """Test opening file with xarray fallback."""
-        from davinci_monet.observations.satellite.goes import GOESReader
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESL3AODReader
 
         ds = create_synthetic_gridded_obs()
 
         with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as f:
             ds.to_netcdf(f.name)
-            reader = GOESReader()
+            reader = GOESL3AODReader()
             # Use xarray method directly to bypass monetio
             result = reader._open_with_xarray([Path(f.name)], None)
             assert "AOD" in result.data_vars
@@ -459,13 +459,19 @@ class TestGOESReader:
 
     def test_standardization(self):
         """Test dataset standardization."""
-        from davinci_monet.observations.satellite.goes import GOESReader
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESL3AODReader
 
         ds = create_synthetic_gridded_obs()
 
-        reader = GOESReader()
+        reader = GOESL3AODReader()
         result = reader._standardize_dataset(ds)
         assert result.attrs.get("geometry") == DataGeometry.GRID.value
+
+    def test_backward_compatibility_alias(self):
+        """Test GOESReader alias still works."""
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESReader
+        reader = GOESReader()
+        assert reader.name == "goes_l3_aod"
 
 
 # =============================================================================
@@ -586,10 +592,10 @@ class TestGeometryAttributes:
 
     def test_gridded_geometry(self):
         """Test gridded readers set GRID geometry via standardization."""
-        from davinci_monet.observations.satellite.goes import GOESReader
+        from davinci_monet.observations.satellite.goes_l3_aod import GOESL3AODReader
 
         ds = create_synthetic_gridded_obs()
-        reader = GOESReader()
+        reader = GOESL3AODReader()
         result = reader._standardize_dataset(ds)
         assert result.attrs.get("geometry") == DataGeometry.GRID.value
 

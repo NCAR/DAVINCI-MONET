@@ -1,51 +1,66 @@
-"""GOES (Geostationary Operational Environmental Satellite) observation reader.
+"""GOES L3 AOD (Aerosol Optical Depth) observation reader.
 
-This module provides the GOESReader class for reading GOES-ABI products
-including AOD (Aerosol Optical Depth) and other atmospheric products.
+This module provides the GOESL3AODReader class for reading GOES-ABI L3 AOD
+(Aerosol Optical Depth) gridded products.
+
+Note
+----
+This reader is optimized for GOES-ABI AOD products and relies on monetio.sat.goes
+for full functionality. Without monetio, it falls back to basic xarray reading
+which may not handle all GOES-specific features (projection, etc.).
 """
 
 from __future__ import annotations
 
 import warnings
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-import numpy as np
 import xarray as xr
 
-from davinci_monet.core.exceptions import DataFormatError, DataNotFoundError
+from davinci_monet.core.exceptions import DataNotFoundError
 from davinci_monet.core.protocols import DataGeometry
 from davinci_monet.core.registry import observation_registry
 from davinci_monet.observations.base import ObservationData, create_observation_data
 
 
-# Standard variable name mappings for GOES
-GOES_VARIABLE_MAPPING: dict[str, str] = {
+# Standard variable name mappings for GOES AOD
+GOES_AOD_VARIABLE_MAPPING: dict[str, str] = {
     "aod": "AOD",
     "aod_550": "AOD",
     "dqf": "DQF",
     "quality_flag": "DQF",
 }
 
+# Backward compatibility alias
+GOES_VARIABLE_MAPPING = GOES_AOD_VARIABLE_MAPPING
 
-@observation_registry.register("goes")
-class GOESReader:
-    """Reader for GOES-ABI satellite observations.
 
-    Reads GOES data from NetCDF files, supporting AOD and other products.
+@observation_registry.register("goes_l3_aod")
+class GOESL3AODReader:
+    """Reader for GOES-ABI L3 AOD satellite observations.
+
+    Reads GOES L3 AOD data from NetCDF files. This reader is specifically
+    designed for GOES-ABI Aerosol Optical Depth products.
+
     Data is returned as grid geometry with (time, y, x) dimensions.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, the reader falls
+    back to basic xarray which may not handle GOES-specific features like
+    fixed grid projections correctly.
 
     Examples
     --------
-    >>> reader = GOESReader()
+    >>> reader = GOESL3AODReader()
     >>> ds = reader.open(["OR_ABI-L2-AODC*.nc"])
     """
 
     @property
     def name(self) -> str:
         """Return reader name."""
-        return "goes"
+        return "goes_l3_aod"
 
     def open(
         self,
@@ -56,16 +71,16 @@ class GOESReader:
         dqf_filter: Sequence[int] | None = None,
         **kwargs: Any,
     ) -> xr.Dataset:
-        """Open GOES observation files.
+        """Open GOES L3 AOD observation files.
 
         Parameters
         ----------
         file_paths
-            Paths to GOES-ABI files.
+            Paths to GOES-ABI L3 AOD files.
         variables
             Variables to load.
         product
-            Product type ('AOD', 'FDC', etc.).
+            Product type (default 'AOD').
         dqf_filter
             Data Quality Flag values to keep. If None, keeps all.
             Common values: 0=high quality, 1=medium, 2=low.
@@ -91,7 +106,8 @@ class GOESReader:
             ds = self._open_with_monetio(file_list, variables, **kwargs)
         except ImportError:
             warnings.warn(
-                "monetio not available, using basic xarray reader.",
+                "monetio not available, using basic xarray reader. "
+                "GOES projection handling may be incomplete.",
                 UserWarning,
             )
             ds = self._open_with_xarray(file_list, variables, **kwargs)
@@ -207,19 +223,23 @@ class GOESReader:
         return ds
 
     def get_variable_mapping(self) -> Mapping[str, str]:
-        """Return GOES variable name mapping."""
-        return GOES_VARIABLE_MAPPING
+        """Return GOES AOD variable name mapping."""
+        return GOES_AOD_VARIABLE_MAPPING
 
 
-def open_goes(
+# Backward compatibility alias
+GOESReader = GOESL3AODReader
+
+
+def open_goes_l3_aod(
     files: str | Path | Sequence[str | Path],
     variables: Sequence[str] | None = None,
-    label: str = "goes",
+    label: str = "goes_aod",
     product: str = "AOD",
     dqf_filter: Sequence[int] | None = None,
     **kwargs: Any,
 ) -> ObservationData:
-    """Convenience function to open GOES observation data.
+    """Open GOES L3 AOD observation data.
 
     Parameters
     ----------
@@ -230,7 +250,7 @@ def open_goes(
     label
         Observation label.
     product
-        Product type ('AOD', 'FDC', etc.).
+        Product type (default 'AOD').
     dqf_filter
         Data Quality Flag values to keep.
     **kwargs
@@ -240,10 +260,15 @@ def open_goes(
     -------
     ObservationData
         GOES observation data container with GRID geometry.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, GOES projection
+    handling may be incomplete.
     """
     from glob import glob
 
-    reader = GOESReader()
+    reader = GOESL3AODReader()
 
     if isinstance(files, (str, Path)):
         file_str = str(files)
@@ -270,3 +295,27 @@ def open_goes(
     obs.geometry = DataGeometry.GRID
 
     return obs
+
+
+# Backward compatibility alias
+def open_goes(
+    files: str | Path | Sequence[str | Path],
+    variables: Sequence[str] | None = None,
+    label: str = "goes",
+    product: str = "AOD",
+    dqf_filter: Sequence[int] | None = None,
+    **kwargs: Any,
+) -> ObservationData:
+    """Open GOES observation data (deprecated, use open_goes_l3_aod).
+
+    .. deprecated::
+        Use :func:`open_goes_l3_aod` instead.
+    """
+    warnings.warn(
+        "open_goes is deprecated, use open_goes_l3_aod instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return open_goes_l3_aod(
+        files, variables, label=label, product=product, dqf_filter=dqf_filter, **kwargs
+    )

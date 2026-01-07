@@ -1,7 +1,14 @@
-"""TROPOMI (TROPOspheric Monitoring Instrument) observation reader.
+"""TROPOMI (TROPOspheric Monitoring Instrument) L2 observation reader.
 
 This module provides the TROPOMIReader class for reading TROPOMI L2
 satellite products including NO2, O3, CO, HCHO, and SO2.
+
+Note
+----
+This reader is optimized for TROPOMI L2 products and relies on
+monetio.sat._tropomi_l2_no2_mm for full functionality. Without monetio,
+it falls back to basic xarray reading which may not handle all
+TROPOMI-specific features (nested HDF5 groups, swath geometry, etc.).
 """
 
 from __future__ import annotations
@@ -38,6 +45,12 @@ class TROPOMIReader:
 
     Reads TROPOMI data from NetCDF files or via monetio.
     Data is returned as swath geometry with (time, scanline, pixel) dimensions.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, the reader falls
+    back to basic xarray which may not handle TROPOMI-specific features like
+    nested HDF5 groups and swath geometry correctly.
 
     Examples
     --------
@@ -96,7 +109,8 @@ class TROPOMIReader:
             )
         except ImportError:
             warnings.warn(
-                "monetio not available, using basic xarray reader.",
+                "monetio not available, using basic xarray reader. "
+                "TROPOMI swath geometry handling may be incomplete.",
                 UserWarning,
             )
             ds = self._open_with_xarray(file_list, variables, **kwargs)
@@ -256,6 +270,11 @@ def open_tropomi(
     -------
     ObservationData
         TROPOMI observation data container with SWATH geometry.
+
+    Note
+    ----
+    Full functionality requires monetio. Without monetio, TROPOMI swath
+    geometry handling may be incomplete.
     """
     from glob import glob
 

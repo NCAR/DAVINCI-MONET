@@ -24,8 +24,21 @@ from davinci_monet.observations.surface.openaq import OpenAQReader, open_openaq
 from davinci_monet.observations.aircraft.icartt import ICARTTReader, open_icartt
 
 # Satellite observation readers
-from davinci_monet.observations.satellite.goes import GOESReader, open_goes
 from davinci_monet.observations.satellite.tropomi import TROPOMIReader, open_tropomi
+from davinci_monet.observations.satellite.goes_l3_aod import (
+    GOESL3AODReader,
+    GOESReader,  # Backward compatibility alias
+    open_goes_l3_aod,
+    open_goes,  # Backward compatibility alias (deprecated)
+)
+from davinci_monet.observations.satellite.generic_l2 import (
+    GenericL2Reader,
+    open_satellite_l2,
+)
+from davinci_monet.observations.satellite.generic_l3 import (
+    GenericL3Reader,
+    open_satellite_l3,
+)
 
 # Sonde observation readers
 from davinci_monet.observations.sonde.ozonesonde import OzonesondeReader, open_ozonesonde
@@ -53,9 +66,15 @@ __all__ = [
     "open_icartt",
     # Satellite readers
     "TROPOMIReader",
-    "GOESReader",
+    "GOESL3AODReader",
+    "GOESReader",  # Backward compatibility
+    "GenericL2Reader",
+    "GenericL3Reader",
     "open_tropomi",
-    "open_goes",
+    "open_goes_l3_aod",
+    "open_goes",  # Backward compatibility (deprecated)
+    "open_satellite_l2",
+    "open_satellite_l3",
     # Sonde readers
     "OzonesondeReader",
     "open_ozonesonde",
