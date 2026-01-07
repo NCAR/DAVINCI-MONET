@@ -415,6 +415,7 @@ class ModelData(DataContainer):
 def create_model_data(
     label: str,
     mod_type: str = "",
+    data: xr.Dataset | None = None,
     files: str | Path | Sequence[str | Path] | None = None,
     radius_of_influence: float = 12000.0,
     mapping: dict[str, VariableMapping] | None = None,
@@ -429,6 +430,8 @@ def create_model_data(
         Model run identifier.
     mod_type
         Model type (e.g., 'cmaq', 'wrfchem').
+    data
+        Pre-loaded xarray Dataset.
     files
         File path(s) or glob pattern.
     radius_of_influence
@@ -446,6 +449,7 @@ def create_model_data(
         Configured ModelData instance.
     """
     model = ModelData(
+        data=data,
         label=label,
         mod_type=mod_type,
         radius_of_influence=radius_of_influence,

@@ -1,0 +1,581 @@
+"""Tests for model reader implementations."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+import pandas as pd
+import pytest
+import xarray as xr
+
+from davinci_monet.core.exceptions import DataNotFoundError
+from davinci_monet.core.registry import model_registry
+from davinci_monet.models import (
+    CESMFVReader,
+    CESMSEReader,
+    CMAQReader,
+    GenericReader,
+    ModelData,
+    RRFSReader,
+    UFSReader,
+    WRFChemReader,
+    create_model_data,
+    open_model,
+)
+
+
+# =============================================================================
+# Fixtures for synthetic model data
+# =============================================================================
+
+
+@pytest.fixture
+def cmaq_dataset() -> xr.Dataset:
+    """Create a synthetic CMAQ-style dataset."""
+    times = pd.date_range("2024-01-01", periods=24, freq="h")
+    layers = np.arange(35)
+    rows = np.arange(100)
+    cols = np.arange(120)
+
+    # Create 2D lat/lon
+    lat = 30 + 0.1 * rows[:, np.newaxis] + np.zeros((100, 120))
+    lon = -120 + 0.1 * cols + np.zeros((100, 1))
+
+    return xr.Dataset(
+        {
+            "O3": (["TSTEP", "LAY", "ROW", "COL"], np.random.rand(24, 35, 100, 120)),
+            "PM25_TOT": (["TSTEP", "LAY", "ROW", "COL"], np.random.rand(24, 35, 100, 120)),
+            "NO2": (["TSTEP", "LAY", "ROW", "COL"], np.random.rand(24, 35, 100, 120)),
+        },
+        coords={
+            "TSTEP": times,
+            "LAY": layers,
+            "ROW": rows,
+            "COL": cols,
+            "latitude": (["ROW", "COL"], lat),
+            "longitude": (["ROW", "COL"], lon),
+        },
+    )
+
+
+@pytest.fixture
+def wrfchem_dataset() -> xr.Dataset:
+    """Create a synthetic WRF-Chem-style dataset."""
+    times = pd.date_range("2024-01-01", periods=24, freq="h")
+    levels = np.arange(35)
+    y = np.arange(100)
+    x = np.arange(120)
+
+    lat = 30 + 0.1 * y[:, np.newaxis] + np.zeros((100, 120))
+    lon = -120 + 0.1 * x + np.zeros((100, 1))
+
+    return xr.Dataset(
+        {
+            "o3": (["Time", "bottom_top", "south_north", "west_east"],
+                   np.random.rand(24, 35, 100, 120)),
+            "PM2_5_DRY": (["Time", "bottom_top", "south_north", "west_east"],
+                          np.random.rand(24, 35, 100, 120)),
+            "T2": (["Time", "south_north", "west_east"],
+                   280 + 20 * np.random.rand(24, 100, 120)),
+        },
+        coords={
+            "Time": times,
+            "bottom_top": levels,
+            "south_north": y,
+            "west_east": x,
+            "XLAT": (["south_north", "west_east"], lat),
+            "XLONG": (["south_north", "west_east"], lon),
+        },
+    )
+
+
+@pytest.fixture
+def ufs_dataset() -> xr.Dataset:
+    """Create a synthetic UFS-style dataset."""
+    times = pd.date_range("2024-01-01", periods=6, freq="h")
+    levels = np.arange(65)
+    lat = np.linspace(20, 55, 100)
+    lon = np.linspace(-130, -60, 200)
+
+    return xr.Dataset(
+        {
+            "o3": (["time", "pfull", "grid_yt", "grid_xt"],
+                   np.random.rand(6, 65, 100, 200)),
+            "pm25": (["time", "grid_yt", "grid_xt"],
+                     np.random.rand(6, 100, 200)),
+            "tmp2m": (["time", "grid_yt", "grid_xt"],
+                      280 + 20 * np.random.rand(6, 100, 200)),
+        },
+        coords={
+            "time": times,
+            "pfull": levels,
+            "grid_yt": lat,
+            "grid_xt": lon,
+        },
+    )
+
+
+@pytest.fixture
+def cesm_fv_dataset() -> xr.Dataset:
+    """Create a synthetic CESM-FV-style dataset."""
+    times = pd.date_range("2024-01-01", periods=31, freq="D")
+    levels = np.arange(32)
+    lat = np.linspace(-90, 90, 192)
+    lon = np.linspace(0, 360, 288)
+
+    return xr.Dataset(
+        {
+            "O3": (["time", "lev", "lat", "lon"],
+                   np.random.rand(31, 32, 192, 288)),
+            "T": (["time", "lev", "lat", "lon"],
+                  200 + 100 * np.random.rand(31, 32, 192, 288)),
+            "PS": (["time", "lat", "lon"],
+                   100000 + 5000 * np.random.rand(31, 192, 288)),
+        },
+        coords={
+            "time": times,
+            "lev": levels,
+            "lat": lat,
+            "lon": lon,
+        },
+    )
+
+
+@pytest.fixture
+def generic_dataset() -> xr.Dataset:
+    """Create a generic NetCDF-style dataset."""
+    times = pd.date_range("2024-01-01", periods=10, freq="D")
+    lat = np.linspace(-90, 90, 50)
+    lon = np.linspace(-180, 180, 100)
+
+    return xr.Dataset(
+        {
+            "temperature": (["time", "lat", "lon"],
+                            280 + 20 * np.random.rand(10, 50, 100)),
+            "precipitation": (["time", "lat", "lon"],
+                              np.random.rand(10, 50, 100)),
+        },
+        coords={
+            "time": times,
+            "lat": lat,
+            "lon": lon,
+        },
+    )
+
+
+@pytest.fixture
+def temp_netcdf_file(tmp_path: Path, generic_dataset: xr.Dataset) -> Path:
+    """Create a temporary NetCDF file for testing."""
+    file_path = tmp_path / "test_model.nc"
+    generic_dataset.to_netcdf(file_path)
+    return file_path
+
+
+# =============================================================================
+# Tests for Model Registry
+# =============================================================================
+
+
+class TestModelRegistry:
+    """Tests for model registry functionality."""
+
+    def test_cmaq_registered(self) -> None:
+        """Test that CMAQ reader is registered."""
+        reader_cls = model_registry.get("cmaq")
+        reader = reader_cls()
+        assert isinstance(reader, CMAQReader)
+
+    def test_wrfchem_registered(self) -> None:
+        """Test that WRF-Chem reader is registered."""
+        reader_cls = model_registry.get("wrfchem")
+        reader = reader_cls()
+        assert isinstance(reader, WRFChemReader)
+
+    def test_ufs_registered(self) -> None:
+        """Test that UFS reader is registered."""
+        reader_cls = model_registry.get("ufs")
+        reader = reader_cls()
+        assert isinstance(reader, UFSReader)
+
+    def test_rrfs_registered(self) -> None:
+        """Test that RRFS reader is registered (alias for UFS)."""
+        reader_cls = model_registry.get("rrfs")
+        reader = reader_cls()
+        assert isinstance(reader, RRFSReader)
+
+    def test_cesm_fv_registered(self) -> None:
+        """Test that CESM-FV reader is registered."""
+        reader_cls = model_registry.get("cesm_fv")
+        reader = reader_cls()
+        assert isinstance(reader, CESMFVReader)
+
+    def test_cesm_se_registered(self) -> None:
+        """Test that CESM-SE reader is registered."""
+        reader_cls = model_registry.get("cesm_se")
+        reader = reader_cls()
+        assert isinstance(reader, CESMSEReader)
+
+    def test_generic_registered(self) -> None:
+        """Test that generic reader is registered."""
+        reader_cls = model_registry.get("generic")
+        reader = reader_cls()
+        assert isinstance(reader, GenericReader)
+
+
+# =============================================================================
+# Tests for CMAQReader
+# =============================================================================
+
+
+class TestCMAQReader:
+    """Tests for CMAQ model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = CMAQReader()
+        assert reader.name == "cmaq"
+
+    def test_variable_mapping(self) -> None:
+        """Test variable mapping contains expected entries."""
+        reader = CMAQReader()
+        mapping = reader.get_variable_mapping()
+        assert "ozone" in mapping
+        assert mapping["ozone"] == "O3"
+        assert "pm25" in mapping
+        assert mapping["pm25"] == "PM25_TOT"
+
+    def test_standardize_dataset(self, cmaq_dataset: xr.Dataset) -> None:
+        """Test that CMAQ dimensions are standardized."""
+        reader = CMAQReader()
+        standardized = reader._standardize_dataset(cmaq_dataset)
+
+        # Check dimension renames
+        assert "time" in standardized.dims
+        assert "z" in standardized.dims
+        assert "y" in standardized.dims
+        assert "x" in standardized.dims
+
+    def test_open_missing_files(self) -> None:
+        """Test that opening missing files raises error."""
+        reader = CMAQReader()
+        with pytest.raises(DataNotFoundError):
+            reader.open(["/nonexistent/file.nc"])
+
+
+# =============================================================================
+# Tests for WRFChemReader
+# =============================================================================
+
+
+class TestWRFChemReader:
+    """Tests for WRF-Chem model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = WRFChemReader()
+        assert reader.name == "wrfchem"
+
+    def test_variable_mapping(self) -> None:
+        """Test variable mapping contains expected entries."""
+        reader = WRFChemReader()
+        mapping = reader.get_variable_mapping()
+        assert "ozone" in mapping
+        assert mapping["ozone"] == "o3"
+        assert "temperature" in mapping
+        assert mapping["temperature"] == "T2"
+
+    def test_standardize_dataset(self, wrfchem_dataset: xr.Dataset) -> None:
+        """Test that WRF-Chem dimensions are standardized."""
+        reader = WRFChemReader()
+        standardized = reader._standardize_dataset(wrfchem_dataset)
+
+        # Check dimension renames
+        assert "time" in standardized.dims
+        assert "z" in standardized.dims
+        assert "y" in standardized.dims
+        assert "x" in standardized.dims
+
+
+# =============================================================================
+# Tests for UFSReader
+# =============================================================================
+
+
+class TestUFSReader:
+    """Tests for UFS model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = UFSReader()
+        assert reader.name == "ufs"
+
+    def test_rrfs_alias(self) -> None:
+        """Test RRFS reader is an alias for UFS."""
+        reader = RRFSReader()
+        assert reader.name == "rrfs"
+        assert isinstance(reader, UFSReader)
+
+    def test_variable_mapping(self) -> None:
+        """Test variable mapping contains expected entries."""
+        reader = UFSReader()
+        mapping = reader.get_variable_mapping()
+        assert "ozone" in mapping
+        assert mapping["ozone"] == "o3"
+        assert "pm25" in mapping
+
+    def test_standardize_dataset(self, ufs_dataset: xr.Dataset) -> None:
+        """Test that UFS dimensions are standardized."""
+        reader = UFSReader()
+        standardized = reader._standardize_dataset(ufs_dataset)
+
+        # Check dimension renames
+        assert "z" in standardized.dims
+        assert "y" in standardized.dims
+        assert "x" in standardized.dims
+
+
+# =============================================================================
+# Tests for CESMFVReader
+# =============================================================================
+
+
+class TestCESMFVReader:
+    """Tests for CESM-FV model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = CESMFVReader()
+        assert reader.name == "cesm_fv"
+
+    def test_variable_mapping(self) -> None:
+        """Test variable mapping contains expected entries."""
+        reader = CESMFVReader()
+        mapping = reader.get_variable_mapping()
+        assert "ozone" in mapping
+        assert mapping["ozone"] == "O3"
+        assert "temperature" in mapping
+        assert mapping["temperature"] == "T"
+
+    def test_standardize_dataset(self, cesm_fv_dataset: xr.Dataset) -> None:
+        """Test that CESM-FV dimensions are standardized."""
+        reader = CESMFVReader()
+        standardized = reader._standardize_dataset(cesm_fv_dataset)
+
+        # Check lev renamed to z
+        assert "z" in standardized.dims
+
+
+# =============================================================================
+# Tests for CESMSEReader
+# =============================================================================
+
+
+class TestCESMSEReader:
+    """Tests for CESM-SE model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = CESMSEReader()
+        assert reader.name == "cesm_se"
+
+    def test_variable_mapping(self) -> None:
+        """Test variable mapping returns CESM mapping."""
+        reader = CESMSEReader()
+        mapping = reader.get_variable_mapping()
+        assert "ozone" in mapping
+
+
+# =============================================================================
+# Tests for GenericReader
+# =============================================================================
+
+
+class TestGenericReader:
+    """Tests for generic model reader."""
+
+    def test_name_property(self) -> None:
+        """Test reader name property."""
+        reader = GenericReader()
+        assert reader.name == "generic"
+
+    def test_variable_mapping_empty(self) -> None:
+        """Test that generic reader has empty variable mapping."""
+        reader = GenericReader()
+        mapping = reader.get_variable_mapping()
+        assert len(mapping) == 0
+
+    def test_open_netcdf_file(self, temp_netcdf_file: Path) -> None:
+        """Test opening a NetCDF file."""
+        reader = GenericReader()
+        ds = reader.open([temp_netcdf_file])
+
+        assert "temperature" in ds.data_vars
+        assert "time" in ds.dims
+        assert "lat" in ds.dims
+        assert "lon" in ds.dims
+
+    def test_open_with_variable_selection(self, temp_netcdf_file: Path) -> None:
+        """Test opening with variable selection."""
+        reader = GenericReader()
+        ds = reader.open([temp_netcdf_file], variables=["temperature"])
+
+        assert "temperature" in ds.data_vars
+        assert "precipitation" not in ds.data_vars
+
+    def test_open_missing_files(self) -> None:
+        """Test that opening missing files raises error."""
+        reader = GenericReader()
+        with pytest.raises(DataNotFoundError):
+            reader.open(["/nonexistent/file.nc"])
+
+    def test_detect_engine_netcdf(self, tmp_path: Path) -> None:
+        """Test engine detection for NetCDF files."""
+        reader = GenericReader()
+        nc_path = tmp_path / "test.nc"
+        assert reader._detect_engine(nc_path) == "netcdf4"
+
+    def test_detect_engine_grib(self, tmp_path: Path) -> None:
+        """Test engine detection for grib files."""
+        reader = GenericReader()
+        grib_path = tmp_path / "test.grib2"
+        assert reader._detect_engine(grib_path) == "cfgrib"
+
+    def test_standardize_dimensions(self) -> None:
+        """Test dimension standardization with aliases."""
+        reader = GenericReader()
+
+        # Create dataset with non-standard dimension names
+        ds = xr.Dataset(
+            {"temp": (["Time", "level", "latitude", "longitude"],
+                      np.random.rand(5, 10, 20, 30))},
+            coords={
+                "Time": pd.date_range("2024-01-01", periods=5),
+                "level": np.arange(10),
+                "latitude": np.linspace(-90, 90, 20),
+                "longitude": np.linspace(-180, 180, 30),
+            },
+        )
+
+        standardized = reader._standardize_dataset(ds)
+
+        # Check that aliases were standardized
+        assert "time" in standardized.dims
+        assert "z" in standardized.dims
+        assert "lat" in standardized.dims
+        assert "lon" in standardized.dims
+
+
+# =============================================================================
+# Tests for open_model function
+# =============================================================================
+
+
+class TestOpenModel:
+    """Tests for the universal open_model function."""
+
+    def test_open_with_generic(self, temp_netcdf_file: Path) -> None:
+        """Test opening with no model type (generic)."""
+        data = open_model(temp_netcdf_file, label="test")
+
+        assert isinstance(data, ModelData)
+        assert data.label == "test"
+        assert data.mod_type == "generic"
+        assert data.data is not None
+
+    def test_open_with_unknown_type(self, temp_netcdf_file: Path) -> None:
+        """Test opening with unknown model type falls back to generic."""
+        with pytest.warns(UserWarning, match="Unknown model type"):
+            data = open_model(temp_netcdf_file, mod_type="unknown", label="test")
+
+        assert data.mod_type == "generic"
+
+    def test_open_missing_pattern(self, tmp_path: Path) -> None:
+        """Test that missing glob pattern raises error."""
+        with pytest.raises(DataNotFoundError):
+            open_model(tmp_path / "*.nonexistent")
+
+
+# =============================================================================
+# Tests for create_model_data function
+# =============================================================================
+
+
+class TestCreateModelData:
+    """Tests for create_model_data factory function."""
+
+    def test_create_with_data(self, generic_dataset: xr.Dataset) -> None:
+        """Test creating ModelData with pre-loaded data."""
+        model = create_model_data(
+            label="test_model",
+            mod_type="cesm",
+            data=generic_dataset,
+        )
+
+        assert model.label == "test_model"
+        assert model.mod_type == "cesm"
+        assert model.data is not None
+        assert "temperature" in model.data.data_vars
+
+    def test_create_with_files(self, temp_netcdf_file: Path) -> None:
+        """Test creating ModelData with file path."""
+        model = create_model_data(
+            label="test_model",
+            mod_type="generic",
+            files=temp_netcdf_file,
+        )
+
+        assert model.label == "test_model"
+        assert len(model.files) == 1
+        assert model.files[0] == temp_netcdf_file
+
+    def test_create_with_mapping(self) -> None:
+        """Test creating ModelData with variable mapping."""
+        model = create_model_data(
+            label="test_model",
+            mapping={"obs_label": {"obs_var": "model_var"}},
+        )
+
+        assert "obs_label" in model.obs_mapping
+        assert model.obs_mapping["obs_label"]["obs_var"] == "model_var"
+
+
+# =============================================================================
+# Integration tests
+# =============================================================================
+
+
+class TestModelReaderIntegration:
+    """Integration tests for model readers with full workflow."""
+
+    def test_full_workflow_generic(self, temp_netcdf_file: Path) -> None:
+        """Test complete workflow with generic reader."""
+        # Open the data
+        model = open_model(
+            temp_netcdf_file,
+            mod_type="generic",
+            label="test_run",
+        )
+
+        # Verify data is loaded
+        assert model.data is not None
+        assert model.label == "test_run"
+
+        # Test subset operations
+        subset = model.subset_time(
+            start=pd.Timestamp("2024-01-01"),
+            end=pd.Timestamp("2024-01-05"),
+        )
+        assert subset.data is not None
+        assert len(subset.data.time) == 5
+
+    def test_reader_standardization(self, cmaq_dataset: xr.Dataset) -> None:
+        """Test that reader standardizes coordinates properly."""
+        reader = CMAQReader()
+        standardized = reader._standardize_dataset(cmaq_dataset)
+
+        # Verify lat/lon are available as coordinates
+        assert "lat" in standardized.coords or "latitude" in standardized.coords
+        assert "lon" in standardized.coords or "longitude" in standardized.coords

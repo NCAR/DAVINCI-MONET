@@ -1,0 +1,275 @@
+"""Generic model reader.
+
+This module provides a fallback reader for model output that doesn't match
+any specific model type. It uses xarray's generic NetCDF/grib readers.
+"""
+
+from __future__ import annotations
+
+import warnings
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+import xarray as xr
+
+from davinci_monet.core.exceptions import DataFormatError, DataNotFoundError
+from davinci_monet.core.registry import model_registry
+from davinci_monet.models.base import ModelData, create_model_data
+
+
+# Common coordinate name aliases for standardization
+COMMON_COORDINATE_ALIASES: dict[str, list[str]] = {
+    "time": ["time", "Time", "TSTEP", "t", "datetime", "date_time"],
+    "z": ["z", "lev", "level", "levels", "z_level", "altitude", "height",
+          "bottom_top", "LAY", "layer", "pfull", "phalf", "sigma"],
+    "lat": ["lat", "latitude", "LAT", "LATITUDE", "XLAT", "south_north",
+            "nlat", "rlat", "grid_yt", "y"],
+    "lon": ["lon", "longitude", "LON", "LONGITUDE", "XLONG", "west_east",
+            "nlon", "rlon", "grid_xt", "x"],
+}
+
+
+@model_registry.register("generic")
+class GenericReader:
+    """Generic model reader for arbitrary NetCDF/grib files.
+
+    This reader provides a fallback for model types that don't have
+    a dedicated reader. It attempts to standardize dimensions and
+    coordinates automatically.
+
+    Examples
+    --------
+    >>> reader = GenericReader()
+    >>> ds = reader.open(["model_output.nc"])
+    """
+
+    @property
+    def name(self) -> str:
+        """Return reader name."""
+        return "generic"
+
+    def open(
+        self,
+        file_paths: Sequence[str | Path],
+        variables: Sequence[str] | None = None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Open model files using xarray.
+
+        Parameters
+        ----------
+        file_paths
+            Paths to model output files.
+        variables
+            Variables to load. If None, loads all variables.
+        **kwargs
+            Additional options:
+            - engine: xarray engine to use ('netcdf4', 'h5netcdf', 'cfgrib', etc.)
+            - standardize: bool, whether to standardize dimension names (default True)
+            - concat_dim: Dimension to concatenate along (default 'time')
+            - combine: How to combine files ('by_coords', 'nested')
+
+        Returns
+        -------
+        xr.Dataset
+            Model data with optionally standardized dimensions.
+        """
+        file_list = [Path(f) for f in file_paths]
+
+        if not file_list:
+            raise DataNotFoundError("No files provided")
+
+        # Check files exist
+        missing = [f for f in file_list if not f.exists()]
+        if missing:
+            raise DataNotFoundError(f"Files not found: {missing}")
+
+        # Extract our custom kwargs
+        standardize = kwargs.pop("standardize", True)
+        concat_dim = kwargs.pop("concat_dim", "time")
+        combine = kwargs.pop("combine", "by_coords")
+
+        # Detect engine if not specified
+        if "engine" not in kwargs:
+            engine = self._detect_engine(file_list[0])
+            if engine:
+                kwargs["engine"] = engine
+
+        # Open files
+        try:
+            if len(file_list) > 1:
+                ds = xr.open_mfdataset(
+                    [str(f) for f in file_list],
+                    combine=combine,
+                    **kwargs,
+                )
+            else:
+                ds = xr.open_dataset(str(file_list[0]), **kwargs)
+        except Exception as e:
+            raise DataFormatError(f"Failed to open files: {e}") from e
+
+        # Select variables if specified
+        if variables is not None:
+            available = [v for v in variables if v in ds.data_vars]
+            if available:
+                ds = ds[available]
+
+        # Standardize dimensions
+        if standardize:
+            ds = self._standardize_dataset(ds)
+
+        return ds
+
+    def _detect_engine(self, file_path: Path) -> str | None:
+        """Detect appropriate xarray engine for file.
+
+        Parameters
+        ----------
+        file_path
+            Path to check.
+
+        Returns
+        -------
+        str | None
+            Engine name or None for default.
+        """
+        suffix = file_path.suffix.lower()
+
+        if suffix in (".grib", ".grib2", ".grb", ".grb2"):
+            return "cfgrib"
+        elif suffix in (".zarr",):
+            return "zarr"
+        elif suffix in (".nc", ".nc4", ".netcdf"):
+            return "netcdf4"
+
+        return None
+
+    def _standardize_dataset(self, ds: xr.Dataset) -> xr.Dataset:
+        """Standardize dataset dimensions and coordinates.
+
+        Parameters
+        ----------
+        ds
+            Raw dataset.
+
+        Returns
+        -------
+        xr.Dataset
+            Dataset with standardized dimension names.
+        """
+        dim_renames: dict[str, str] = {}
+        coord_renames: dict[str, str] = {}
+
+        # Check each standard name against aliases
+        for standard_name, aliases in COMMON_COORDINATE_ALIASES.items():
+            for alias in aliases:
+                # Check dimensions
+                if alias in ds.dims and alias != standard_name:
+                    if standard_name not in ds.dims:
+                        dim_renames[alias] = standard_name
+                    break
+
+                # Check coordinates
+                if alias in ds.coords and alias != standard_name:
+                    if standard_name not in ds.coords:
+                        coord_renames[alias] = standard_name
+                    break
+
+        # Apply renames
+        if dim_renames:
+            ds = ds.rename(dim_renames)
+
+        if coord_renames:
+            ds = ds.rename(coord_renames)
+
+        return ds
+
+    def get_variable_mapping(self) -> Mapping[str, str]:
+        """Return empty mapping (generic reader has no predefined mapping).
+
+        Returns
+        -------
+        Mapping[str, str]
+            Empty mapping.
+        """
+        return {}
+
+
+def open_model(
+    files: str | Path | Sequence[str | Path],
+    mod_type: str | None = None,
+    variables: Sequence[str] | None = None,
+    label: str = "model",
+    **kwargs: Any,
+) -> ModelData:
+    """Universal function to open any model type.
+
+    Automatically selects the appropriate reader based on mod_type,
+    or uses the generic reader if no specific reader matches.
+
+    Parameters
+    ----------
+    files
+        File path(s) or glob pattern.
+    mod_type
+        Model type ('cmaq', 'wrfchem', 'ufs', 'cesm_fv', 'cesm_se', or None for generic).
+    variables
+        Variables to load.
+    label
+        Model label.
+    **kwargs
+        Additional reader options.
+
+    Returns
+    -------
+    ModelData
+        Model data container.
+
+    Examples
+    --------
+    >>> data = open_model("output/*.nc", mod_type="cmaq", label="CMAQ_run1")
+    >>> data = open_model("wrfout_d01_*", mod_type="wrfchem")
+    >>> data = open_model("generic_output.nc")  # Uses generic reader
+    """
+    from davinci_monet.core.registry import model_registry
+
+    # Handle glob pattern
+    if isinstance(files, (str, Path)):
+        file_str = str(files)
+        if "*" in file_str or "?" in file_str:
+            from glob import glob
+            file_list = sorted(glob(file_str))
+            if not file_list:
+                raise DataNotFoundError(f"No files match pattern: {files}")
+            file_paths: Sequence[str | Path] = file_list
+        else:
+            file_paths = [files]
+    else:
+        file_paths = list(files)
+
+    # Get appropriate reader
+    if mod_type is not None:
+        mod_type_lower = mod_type.lower()
+        try:
+            reader_cls = model_registry.get(mod_type_lower)
+            reader = reader_cls()
+        except (KeyError, Exception):
+            warnings.warn(
+                f"Unknown model type '{mod_type}', using generic reader.",
+                UserWarning,
+            )
+            reader = GenericReader()
+            mod_type_lower = "generic"
+    else:
+        reader = GenericReader()
+        mod_type_lower = "generic"
+
+    # Open files
+    ds = reader.open(file_paths, variables, **kwargs)
+
+    return create_model_data(
+        label=label,
+        mod_type=mod_type_lower,
+        data=ds,
+        files=file_paths,
+    )

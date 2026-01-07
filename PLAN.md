@@ -181,15 +181,35 @@ All strategies share:
 ---
 
 ## Phase 6: Model Implementations
-**Status: PENDING**
+**Status: COMPLETE**
 
 Each model reader produces standardized output that feeds into the unified pairing engine.
 
-- [ ] Implement `models/cmaq.py`
-- [ ] Implement `models/wrfchem.py`
-- [ ] Implement `models/ufs.py`
-- [ ] Implement `models/cesm.py`
-- [ ] Implement `models/generic.py` - Fallback handler
+- [x] Implement `models/cmaq.py`
+  - CMAQReader with monetio integration (cmaq_mm fallback to xarray)
+  - Dimension standardization (TSTEP→time, LAY→z, ROW→y, COL→x)
+  - Variable mapping (O3, PM25_TOT, NO2, CO, SO2, etc.)
+  - `open_cmaq()` convenience function
+- [x] Implement `models/wrfchem.py`
+  - WRFChemReader with monetio integration (_wrfchem_mm)
+  - Dimension standardization (Time→time, bottom_top→z, south_north→y, west_east→x)
+  - XLAT/XLONG coordinate handling
+  - `open_wrfchem()` convenience function
+- [x] Implement `models/ufs.py`
+  - UFSReader for UFS-AQM output (grib2 and NetCDF)
+  - RRFSReader alias for backward compatibility
+  - Dimension standardization for grib2 and NetCDF formats
+  - `open_ufs()` convenience function
+- [x] Implement `models/cesm.py`
+  - CESMFVReader for finite volume grid (regular lat-lon)
+  - CESMSEReader for spectral element grid (unstructured, SCRIP file support)
+  - Dimension standardization (lev→z, ilev→z_interface)
+  - `open_cesm()` convenience function with grid_type parameter
+- [x] Implement `models/generic.py` - Fallback handler
+  - GenericReader with automatic engine detection
+  - Common coordinate alias standardization
+  - `open_model()` universal function with registry dispatch
+- [x] Write tests (39 tests for model readers, 483 total)
 
 ---
 
