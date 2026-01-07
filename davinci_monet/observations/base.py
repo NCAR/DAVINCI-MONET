@@ -452,6 +452,7 @@ class ObservationData(DataContainer):
 def create_observation_data(
     label: str,
     obs_type: str = "pt_sfc",
+    data: xr.Dataset | None = None,
     filename: str | Path | None = None,
     variables: dict[str, Any] | None = None,
     time_var: str | None = None,
@@ -467,6 +468,8 @@ def create_observation_data(
         Observation source identifier.
     obs_type
         Observation type (e.g., 'pt_sfc', 'aircraft').
+    data
+        Pre-loaded observation dataset.
     filename
         File path or glob pattern.
     variables
@@ -489,6 +492,7 @@ def create_observation_data(
 
     obs = ObservationData(
         label=label,
+        data=data,
         obs_type=obs_type,
         _geometry=geometry,
         variables=variables or {},

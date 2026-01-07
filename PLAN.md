@@ -214,17 +214,43 @@ Each model reader produces standardized output that feeds into the unified pairi
 ---
 
 ## Phase 7: Observation Implementations
-**Status: PENDING**
+**Status: COMPLETE**
 
 Each observation reader tags its data with geometry type for the pairing engine.
 
-- [ ] Implement `observations/surface/point.py` - pt_sfc → geometry: point
-- [ ] Implement `observations/surface/mobile.py` - mobile → geometry: track
-- [ ] Implement `observations/surface/ground.py` - ground → geometry: point
-- [ ] Implement `observations/aircraft/icartt.py` - aircraft → geometry: track
-- [ ] Implement `observations/satellite/swath.py` - L2 → geometry: swath
-- [ ] Implement `observations/satellite/gridded.py` - L3 → geometry: grid
-- [ ] Implement `observations/sonde/ozonesonde.py` - sonde → geometry: profile
+### Surface Observations (POINT geometry)
+- [x] Implement `observations/surface/aqs.py` - EPA AQS data with monetio integration
+  - AQSReader with file and API query support
+  - `open_aqs()` convenience function
+- [x] Implement `observations/surface/airnow.py` - AirNow real-time data
+  - AirNowReader with monetio integration
+  - `open_airnow()` convenience function
+- [x] Implement `observations/surface/aeronet.py` - AERONET AOD data
+  - AERONETReader with product selection (AOD10, AOD15, etc.)
+  - `open_aeronet()` convenience function
+- [x] Implement `observations/surface/openaq.py` - OpenAQ global data
+  - OpenAQReader with API v2/v3 support
+  - `open_openaq()` convenience function
+
+### Aircraft Observations (TRACK geometry)
+- [x] Implement `observations/aircraft/icartt.py` - ICARTT format
+  - ICARTTReader with monetio fallback to basic parser
+  - `open_icartt()` convenience function
+
+### Satellite Observations (SWATH/GRID geometry)
+- [x] Implement `observations/satellite/tropomi.py` - TROPOMI L2
+  - TROPOMIReader with QA filtering
+  - `open_tropomi()` convenience function
+- [x] Implement `observations/satellite/goes.py` - GOES-ABI AOD
+  - GOESReader with DQF filtering
+  - `open_goes()` convenience function
+
+### Profile Observations (PROFILE geometry)
+- [x] Implement `observations/sonde/ozonesonde.py` - Ozonesonde profiles
+  - OzonesondeReader with WOUDC/SHADOZ/NetCDF format support
+  - `open_ozonesonde()` convenience function
+
+- [x] Write tests (36 tests for observation readers, 519 total)
 
 ---
 
