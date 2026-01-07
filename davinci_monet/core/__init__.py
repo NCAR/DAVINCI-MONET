@@ -3,10 +3,17 @@
 This module provides the foundational components for DAVINCI-MONET:
 - Protocol definitions for all pluggable components
 - Plugin registry system
+- Base data container classes
 - Custom exceptions
 - Type aliases
 """
 
+from davinci_monet.core.base import (
+    DataContainer,
+    PairedData,
+    create_paired_dataset,
+    validate_dataset_geometry,
+)
 from davinci_monet.core.protocols import (
     Configurable,
     DataGeometry,
@@ -72,6 +79,11 @@ from davinci_monet.core.types import (
 )
 
 __all__ = [
+    # Base data classes
+    "DataContainer",
+    "PairedData",
+    "create_paired_dataset",
+    "validate_dataset_geometry",
     # Data geometry enum
     "DataGeometry",
     # Model protocols

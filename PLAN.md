@@ -102,11 +102,25 @@ Build test data generators early so all subsequent phases can be tested immediat
 ---
 
 ## Phase 4: Core Data Classes
-**Status: PENDING**
+**Status: COMPLETE**
 
-- [ ] Implement `core/base.py` - BaseModel, BaseObservation, Pair
-- [ ] Implement `models/base.py` - Common model logic
-- [ ] Implement `observations/base.py` - Common observation logic
+- [x] Implement `core/base.py` - Core data containers
+  - DataContainer: Abstract base class for data wrappers
+  - PairedData: Container for paired model-observation data
+  - create_paired_dataset(): Factory for paired datasets
+  - validate_dataset_geometry(): Geometry validation
+- [x] Implement `models/base.py` - Model data handling
+  - ModelData: Container for model output (CMAQ, WRF-Chem, etc.)
+  - create_model_data(): Factory function
+  - File resolution, variable scaling, masking, renaming
+  - Vertical/horizontal interpolation, regridding
+- [x] Implement `observations/base.py` - Observation data handling
+  - ObservationData: Base container with geometry-based typing
+  - Geometry-specific classes: PointObservation, TrackObservation,
+    ProfileObservation, SwathObservation, GriddedObservation
+  - create_observation_data(): Factory function
+  - QA filtering, resampling, coordinate handling
+- [x] Write tests (106 new tests, 417 total)
 
 ---
 
