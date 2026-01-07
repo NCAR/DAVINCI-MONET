@@ -29,6 +29,24 @@ Surface observation evaluation example:
 python surface_evaluation.py
 ```
 
+### all_plot_types.py
+
+Complete demonstration of all 10 plot types:
+1. Time Series
+2. Diurnal Cycle
+3. Scatter Plot
+4. Taylor Diagram
+5. Box Plot
+6. Spatial Bias Map
+7. Spatial Overlay
+8. Spatial Distribution
+9. Curtain Plot (vertical cross-section)
+10. Scorecard
+
+```bash
+python all_plot_types.py
+```
+
 ### custom_statistics.py
 
 Statistics module deep dive:
