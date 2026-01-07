@@ -35,6 +35,15 @@ from davinci_monet.pairing.strategies.grid import GridStrategy
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 
+def save_figure(fig: plt.Figure, output_path: Path) -> None:
+    """Save figure as both PNG (300 DPI) and PDF."""
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+    print(f"Saved: {pdf_path}")
+
+
 def create_satellite_data() -> tuple[xr.Dataset, xr.Dataset, xr.Dataset]:
     """Create synthetic satellite and model data.
 
@@ -221,8 +230,7 @@ def plot_swath_footprint(swath: xr.Dataset, output_dir: Path) -> None:
         ax.set_title("Satellite L2 Swath Footprint")
         plt.colorbar(pc, label="NO$_2$")
 
-    fig.savefig(output_dir / "swath_footprint.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'swath_footprint.png'}")
+    save_figure(fig, output_dir / "swath_footprint.png")
     plt.close(fig)
 
 
@@ -283,8 +291,7 @@ def plot_swath_bias(paired_swath: xr.Dataset, swath: xr.Dataset, output_dir: Pat
         ax.set_title("L2 Swath Bias")
         plt.colorbar(pc, label="Bias")
 
-    fig.savefig(output_dir / "swath_bias.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'swath_bias.png'}")
+    save_figure(fig, output_dir / "swath_bias.png")
     plt.close(fig)
 
 
@@ -375,8 +382,7 @@ def plot_gridded_comparison(
     fig.suptitle("NO$_2$ L3 Gridded Comparison", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "gridded_comparison.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'gridded_comparison.png'}")
+    save_figure(fig, output_dir / "gridded_comparison.png")
     plt.close(fig)
 
 
@@ -427,8 +433,7 @@ def plot_scatter_density(paired_swath: xr.Dataset, output_dir: Path) -> None:
     ax.legend(loc="lower right")
     ax.set_aspect("equal")
 
-    fig.savefig(output_dir / "scatter_density.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'scatter_density.png'}")
+    save_figure(fig, output_dir / "scatter_density.png")
     plt.close(fig)
 
 
@@ -491,8 +496,7 @@ def plot_histograms(paired_swath: xr.Dataset, paired_grid: xr.Dataset, output_di
     fig.suptitle("NO$_2$ Value Distributions", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "histograms.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'histograms.png'}")
+    save_figure(fig, output_dir / "histograms.png")
     plt.close(fig)
 
 
@@ -561,8 +565,7 @@ def plot_qa_filtering(swath: xr.Dataset, output_dir: Path) -> None:
                  fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "qa_filtering.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'qa_filtering.png'}")
+    save_figure(fig, output_dir / "qa_filtering.png")
     plt.close(fig)
 
 

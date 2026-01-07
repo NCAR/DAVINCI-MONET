@@ -29,6 +29,15 @@ from davinci_monet.tests.synthetic.observations import create_profile_observatio
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 
+def save_figure(fig: plt.Figure, output_path: Path) -> None:
+    """Save figure as both PNG (300 DPI) and PDF."""
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+    print(f"Saved: {pdf_path}")
+
+
 def create_sonde_data() -> tuple[xr.Dataset, xr.Dataset]:
     """Create synthetic sonde and model data.
 
@@ -207,8 +216,7 @@ def plot_launch_locations(sonde: xr.Dataset, output_dir: Path) -> None:
         ax.set_title("Sonde Launch Locations")
         plt.colorbar(sc, label="Sounding Number")
 
-    fig.savefig(output_dir / "launch_locations.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'launch_locations.png'}")
+    save_figure(fig, output_dir / "launch_locations.png")
     plt.close(fig)
 
 
@@ -249,8 +257,7 @@ def plot_single_profile(paired: xr.Dataset, idx: int, output_dir: Path) -> None:
                 fontsize=12, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / f"profile_{idx+1:02d}.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / f'profile_{idx+1:02d}.png'}")
+    save_figure(fig, output_dir / f"profile_{idx+1:02d}.png")
     plt.close(fig)
 
 
@@ -301,8 +308,7 @@ def plot_multi_profile_overlay(paired_list: list[xr.Dataset], output_dir: Path) 
                 fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "profiles_overlay.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'profiles_overlay.png'}")
+    save_figure(fig, output_dir / "profiles_overlay.png")
     plt.close(fig)
 
 
@@ -370,8 +376,7 @@ def plot_mean_bias_profile(paired_list: list[xr.Dataset], output_dir: Path) -> N
                 fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "mean_bias_profiles.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'mean_bias_profiles.png'}")
+    save_figure(fig, output_dir / "mean_bias_profiles.png")
     plt.close(fig)
 
 
@@ -445,8 +450,7 @@ def plot_layer_statistics(paired_list: list[xr.Dataset], output_dir: Path) -> No
                 fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "layer_statistics.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'layer_statistics.png'}")
+    save_figure(fig, output_dir / "layer_statistics.png")
     plt.close(fig)
 
 
@@ -501,8 +505,7 @@ def plot_scatter_by_layer(paired_list: list[xr.Dataset], output_dir: Path) -> No
     fig.suptitle("O$_3$ Scatter by Altitude Layer", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "scatter_by_layer.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'scatter_by_layer.png'}")
+    save_figure(fig, output_dir / "scatter_by_layer.png")
     plt.close(fig)
 
 

@@ -29,6 +29,15 @@ from davinci_monet.pairing.strategies.track import TrackStrategy
 sns.set_theme(style="whitegrid", context="paper", font_scale=1.2)
 
 
+def save_figure(fig: plt.Figure, output_path: Path) -> None:
+    """Save figure as both PNG (300 DPI) and PDF."""
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    pdf_path = output_path.with_suffix(".pdf")
+    fig.savefig(pdf_path, bbox_inches="tight")
+    print(f"Saved: {output_path}")
+    print(f"Saved: {pdf_path}")
+
+
 def create_aircraft_data() -> tuple[xr.Dataset, xr.Dataset]:
     """Create synthetic aircraft track and model data.
 
@@ -129,7 +138,7 @@ def plot_flight_path(aircraft: xr.Dataset, output_dir: Path) -> None:
         ax.set_ylabel("Latitude")
         ax.set_title("Aircraft Flight Path")
         plt.colorbar(sc, label="Altitude (km)")
-        fig.savefig(output_dir / "flight_path.png", dpi=300, bbox_inches="tight")
+        save_figure(fig, output_dir / "flight_path.png")
         plt.close(fig)
         return
 
@@ -179,8 +188,7 @@ def plot_flight_path(aircraft: xr.Dataset, output_dir: Path) -> None:
     ax.set_title("Aircraft Flight Path", fontsize=14, fontweight="bold")
     ax.legend(loc="upper right")
 
-    fig.savefig(output_dir / "flight_path.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'flight_path.png'}")
+    save_figure(fig, output_dir / "flight_path.png")
     plt.close(fig)
 
 
@@ -225,8 +233,7 @@ def plot_curtain(paired: xr.Dataset, aircraft: xr.Dataset, output_dir: Path) -> 
     fig.suptitle("O$_3$ Curtain Plot Along Flight Track", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "curtain_o3.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'curtain_o3.png'}")
+    save_figure(fig, output_dir / "curtain_o3.png")
     plt.close(fig)
 
 
@@ -281,8 +288,7 @@ def plot_scatter(paired: xr.Dataset, output_dir: Path) -> None:
     fig.suptitle("Model vs Observation Scatter Plots", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "scatter.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'scatter.png'}")
+    save_figure(fig, output_dir / "scatter.png")
     plt.close(fig)
 
 
@@ -326,8 +332,7 @@ def plot_timeseries(paired: xr.Dataset, aircraft: xr.Dataset, output_dir: Path) 
     fig.suptitle("Time Series Along Flight Track", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "timeseries.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'timeseries.png'}")
+    save_figure(fig, output_dir / "timeseries.png")
     plt.close(fig)
 
 
@@ -391,8 +396,7 @@ def plot_vertical_profile(paired: xr.Dataset, aircraft: xr.Dataset, output_dir: 
     fig.suptitle("Vertical Profiles (Altitude-Binned)", fontsize=14, fontweight="bold")
     plt.tight_layout()
 
-    fig.savefig(output_dir / "vertical_profile.png", dpi=300, bbox_inches="tight")
-    print(f"Saved: {output_dir / 'vertical_profile.png'}")
+    save_figure(fig, output_dir / "vertical_profile.png")
     plt.close(fig)
 
 
