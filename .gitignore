@@ -206,3 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 SESSION_CONTEXT.md
+
+# Example output (generated files)
+examples/output/
