@@ -1,6 +1,6 @@
 """DAVINCI-MONET: Model and Observation Evaluation Toolkit.
 
-A modern, type-safe rewrite of MELODIES-MONET for evaluating atmospheric
+A modern, type-safe refactor of MELODIES-MONET for evaluating atmospheric
 chemistry and air quality models against observations.
 """
 

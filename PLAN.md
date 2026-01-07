@@ -2,7 +2,7 @@
 
 ## Overview
 
-Complete rewrite of MELODIES-MONET addressing:
+Complete refactor of MELODIES-MONET addressing:
 - `driver.py`: 3,116 lines → ~50 modules (<500 lines each)
 - `plotting()`: 1,321-line method → individual plotter classes
 - No type hints → Full type hints + mypy strict
