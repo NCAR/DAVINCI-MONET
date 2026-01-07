@@ -307,7 +307,7 @@ class TestRegistryWithCallables:
         def my_func() -> str:
             return "hello"
 
-        registry.register("greet", my_func)  # type: ignore[arg-type]
+        registry.register("greet", my_func)  # type: ignore[call-overload]
         assert registry.get("greet") is my_func
 
     def test_register_lambda(self) -> None:
@@ -315,5 +315,5 @@ class TestRegistryWithCallables:
         registry: Registry[type] = Registry("funcs")
 
         my_lambda = lambda x: x * 2  # noqa: E731
-        registry.register("double", my_lambda)  # type: ignore[arg-type]
+        registry.register("double", my_lambda)  # type: ignore[call-overload]
         assert registry.get("double") is my_lambda
