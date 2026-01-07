@@ -1,0 +1,329 @@
+"""Base classes and utilities for spatial plotting.
+
+This module provides common functionality for map-based plots
+using cartopy projections.
+"""
+
+from __future__ import annotations
+
+from abc import abstractmethod
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from davinci_monet.plots.base import BasePlotter, PlotConfig
+
+if TYPE_CHECKING:
+    import cartopy.crs
+    import matplotlib.axes
+    import matplotlib.figure
+    import xarray as xr
+
+
+@dataclass
+class MapConfig:
+    """Configuration for map display.
+
+    Attributes
+    ----------
+    projection : str
+        Map projection name ('PlateCarree', 'LambertConformal', etc.).
+    extent : tuple[float, float, float, float] | None
+        Map extent (lon_min, lon_max, lat_min, lat_max).
+    show_states : bool
+        Show state/province boundaries.
+    show_countries : bool
+        Show country boundaries.
+    show_coastlines : bool
+        Show coastlines.
+    show_gridlines : bool
+        Show lat/lon gridlines.
+    resolution : str
+        Feature resolution ('10m', '50m', '110m').
+    land_color : str
+        Color for land areas.
+    ocean_color : str
+        Color for ocean areas.
+    """
+
+    projection: str = "PlateCarree"
+    extent: tuple[float, float, float, float] | None = None
+    show_states: bool = True
+    show_countries: bool = True
+    show_coastlines: bool = True
+    show_gridlines: bool = True
+    resolution: str = "50m"
+    land_color: str = "lightgray"
+    ocean_color: str = "lightblue"
+
+    @classmethod
+    def from_dict(cls, config_dict: dict[str, Any]) -> MapConfig:
+        """Create MapConfig from dictionary."""
+        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        filtered = {k: v for k, v in config_dict.items() if k in valid_fields}
+        return cls(**filtered)
+
+
+def get_projection(name: str, **kwargs: Any) -> cartopy.crs.Projection:
+    """Get a cartopy projection by name.
+
+    Parameters
+    ----------
+    name
+        Projection name.
+    **kwargs
+        Projection-specific arguments.
+
+    Returns
+    -------
+    cartopy.crs.Projection
+        The projection.
+    """
+    import cartopy.crs as ccrs
+
+    projections = {
+        "PlateCarree": ccrs.PlateCarree,
+        "LambertConformal": ccrs.LambertConformal,
+        "Mercator": ccrs.Mercator,
+        "Robinson": ccrs.Robinson,
+        "Orthographic": ccrs.Orthographic,
+        "AlbersEqualArea": ccrs.AlbersEqualArea,
+        "LambertCylindrical": ccrs.LambertCylindrical,
+    }
+
+    proj_cls = projections.get(name, ccrs.PlateCarree)
+    return proj_cls(**kwargs)
+
+
+class BaseSpatialPlotter(BasePlotter):
+    """Abstract base class for spatial/map plotters.
+
+    Provides common functionality for map creation, feature overlays,
+    and colorbar handling.
+
+    Parameters
+    ----------
+    config
+        Plot configuration.
+    map_config
+        Map-specific configuration.
+    """
+
+    def __init__(
+        self,
+        config: PlotConfig | None = None,
+        map_config: MapConfig | None = None,
+    ) -> None:
+        super().__init__(config)
+        self.map_config = map_config or MapConfig()
+
+    def create_map_figure(
+        self,
+        projection: cartopy.crs.Projection | None = None,
+    ) -> tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]:
+        """Create a figure with map axes.
+
+        Parameters
+        ----------
+        projection
+            Cartopy projection. If None, uses map_config.
+
+        Returns
+        -------
+        tuple[Figure, Axes]
+            Figure and GeoAxes.
+        """
+        import cartopy.crs as ccrs
+
+        if projection is None:
+            projection = get_projection(self.map_config.projection)
+
+        fig = plt.figure(
+            figsize=self.config.figure.figsize,
+            dpi=self.config.figure.dpi,
+            facecolor=self.config.figure.facecolor,
+        )
+        ax = fig.add_subplot(111, projection=projection)
+
+        return fig, ax
+
+    def add_map_features(
+        self,
+        ax: matplotlib.axes.Axes,
+        map_config: MapConfig | None = None,
+    ) -> None:
+        """Add map features (coastlines, borders, etc.) to axes.
+
+        Parameters
+        ----------
+        ax
+            GeoAxes to add features to.
+        map_config
+            Map configuration. If None, uses self.map_config.
+        """
+        import cartopy.feature as cfeature
+
+        cfg = map_config or self.map_config
+
+        # Add land/ocean colors
+        if cfg.land_color:
+            ax.add_feature(
+                cfeature.LAND.with_scale(cfg.resolution),
+                facecolor=cfg.land_color,
+                zorder=0,
+            )
+        if cfg.ocean_color:
+            ax.add_feature(
+                cfeature.OCEAN.with_scale(cfg.resolution),
+                facecolor=cfg.ocean_color,
+                zorder=0,
+            )
+
+        # Add boundaries
+        if cfg.show_coastlines:
+            ax.add_feature(
+                cfeature.COASTLINE.with_scale(cfg.resolution),
+                linewidth=0.5,
+            )
+        if cfg.show_countries:
+            ax.add_feature(
+                cfeature.BORDERS.with_scale(cfg.resolution),
+                linewidth=0.5,
+                linestyle=":",
+            )
+        if cfg.show_states:
+            ax.add_feature(
+                cfeature.STATES.with_scale(cfg.resolution),
+                linewidth=0.3,
+                linestyle=":",
+            )
+
+        # Add gridlines
+        if cfg.show_gridlines:
+            gl = ax.gridlines(
+                draw_labels=True,
+                linewidth=0.5,
+                alpha=0.5,
+                linestyle="--",
+            )
+            gl.top_labels = False
+            gl.right_labels = False
+
+        # Set extent if specified
+        if cfg.extent:
+            ax.set_extent(cfg.extent)
+
+    def add_colorbar(
+        self,
+        fig: matplotlib.figure.Figure,
+        mappable: Any,
+        ax: matplotlib.axes.Axes,
+        label: str | None = None,
+        orientation: str = "vertical",
+        shrink: float = 0.8,
+        pad: float = 0.05,
+        **kwargs: Any,
+    ) -> Any:
+        """Add a colorbar to the figure.
+
+        Parameters
+        ----------
+        fig
+            Figure to add colorbar to.
+        mappable
+            Mappable object (from scatter, pcolormesh, etc.).
+        ax
+            Axes the mappable is on.
+        label
+            Colorbar label.
+        orientation
+            'vertical' or 'horizontal'.
+        shrink
+            Shrink factor.
+        pad
+            Padding.
+        **kwargs
+            Additional colorbar arguments.
+
+        Returns
+        -------
+        Colorbar
+            The created colorbar.
+        """
+        cbar = fig.colorbar(
+            mappable,
+            ax=ax,
+            orientation=orientation,
+            shrink=shrink,
+            pad=pad,
+            **kwargs,
+        )
+        if label:
+            cbar.set_label(label, fontsize=self.config.text.fontsize)
+        cbar.ax.tick_params(labelsize=self.config.text.tick_fontsize)
+        return cbar
+
+    @abstractmethod
+    def plot(
+        self,
+        paired_data: xr.Dataset,
+        obs_var: str,
+        model_var: str,
+        ax: matplotlib.axes.Axes | None = None,
+        **kwargs: Any,
+    ) -> matplotlib.figure.Figure:
+        """Generate the spatial plot."""
+        ...
+
+
+def get_domain_extent(
+    domain_type: str,
+    domain_name: str | None = None,
+) -> tuple[float, float, float, float] | None:
+    """Get geographic extent for a named domain.
+
+    Parameters
+    ----------
+    domain_type
+        Type of domain ('epa_region', 'conus', 'global', etc.).
+    domain_name
+        Specific domain name within type (e.g., 'R1' for EPA Region 1).
+
+    Returns
+    -------
+    tuple[float, float, float, float] | None
+        Extent (lon_min, lon_max, lat_min, lat_max) or None if unknown.
+    """
+    # EPA regions (approximate bounds)
+    epa_regions = {
+        "R1": (-73.5, -66.9, 40.5, 47.5),  # New England
+        "R2": (-80.0, -71.8, 38.8, 45.0),  # NY, NJ, PR, VI
+        "R3": (-83.7, -74.5, 36.5, 42.5),  # Mid-Atlantic
+        "R4": (-92.0, -75.0, 24.5, 39.5),  # Southeast
+        "R5": (-97.5, -80.5, 36.0, 49.5),  # Great Lakes
+        "R6": (-107.0, -88.5, 26.0, 37.0),  # South Central
+        "R7": (-104.5, -89.0, 36.0, 43.5),  # Central
+        "R8": (-117.0, -96.0, 31.5, 49.0),  # Mountain
+        "R9": (-125.0, -114.0, 32.0, 42.5),  # Pacific Southwest
+        "R10": (-130.0, -116.0, 41.5, 49.5),  # Pacific Northwest
+    }
+
+    # Standard domains
+    standard_domains = {
+        "conus": (-130.0, -60.0, 20.0, 55.0),
+        "global": (-180.0, 180.0, -90.0, 90.0),
+        "north_america": (-170.0, -50.0, 10.0, 75.0),
+        "europe": (-15.0, 45.0, 35.0, 72.0),
+        "asia": (60.0, 150.0, 0.0, 55.0),
+    }
+
+    if domain_type == "epa_region" and domain_name:
+        return epa_regions.get(domain_name.upper())
+    elif domain_type in standard_domains:
+        return standard_domains[domain_type]
+    elif domain_name and domain_name in standard_domains:
+        return standard_domains[domain_name]
+
+    return None

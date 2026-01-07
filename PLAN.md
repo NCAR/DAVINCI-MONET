@@ -292,20 +292,22 @@ Each observation reader tags its data with geometry type for the pairing engine.
 ---
 
 ## Phase 9: Plotting
-**Status: PENDING**
+**Status: COMPLETE**
 
-- [ ] Implement `plots/base.py` - BasePlotter
-- [ ] Implement `plots/registry.py` - Plot registry
-- [ ] Implement `plots/renderers/timeseries.py`
-- [ ] Implement `plots/renderers/diurnal.py`
-- [ ] Implement `plots/renderers/taylor.py`
-- [ ] Implement `plots/renderers/boxplot.py`
-- [ ] Implement `plots/renderers/scatter.py`
-- [ ] Implement `plots/renderers/spatial/bias.py`
-- [ ] Implement `plots/renderers/spatial/overlay.py`
-- [ ] Implement `plots/renderers/spatial/distribution.py`
-- [ ] Implement `plots/renderers/curtain.py`
-- [ ] Implement `plots/renderers/scorecard.py`
+- [x] Implement `plots/base.py` - BasePlotter, PlotConfig, utility functions
+- [x] Implement `plots/registry.py` - Plot registry and factory functions
+- [x] Implement `plots/renderers/timeseries.py` - Time series comparisons
+- [x] Implement `plots/renderers/diurnal.py` - Diurnal cycle plots
+- [x] Implement `plots/renderers/taylor.py` - Taylor diagrams
+- [x] Implement `plots/renderers/boxplot.py` - Box plot comparisons
+- [x] Implement `plots/renderers/scatter.py` - Scatter plots with regression/density
+- [x] Implement `plots/renderers/spatial/base.py` - BaseSpatialPlotter, MapConfig
+- [x] Implement `plots/renderers/spatial/bias.py` - Spatial bias maps
+- [x] Implement `plots/renderers/spatial/overlay.py` - Model contour + obs overlays
+- [x] Implement `plots/renderers/spatial/distribution.py` - Value distribution maps
+- [x] Implement `plots/renderers/curtain.py` - Vertical cross-sections
+- [x] Implement `plots/renderers/scorecard.py` - Multi-metric heatmaps
+- [x] Write tests (39 tests for plotting, 660 total)
 
 ---
 
