@@ -33,10 +33,11 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 ## Quick Start
 
 ```bash
-# Install
-conda create -n davinci-monet python=3.11
+# Install from environment file
+git clone https://github.com/NCAR/DAVINCI-MONET.git
+cd DAVINCI-MONET
+conda env create -f environment.yml
 conda activate davinci-monet
-pip install davinci-monet
 
 # Run analysis
 davinci-monet run config.yaml

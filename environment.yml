@@ -1,0 +1,25 @@
+name: davinci-monet
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python version
+  - python=3.11
+
+  # Core scientific stack (via melodies-monet)
+  - melodies-monet
+
+  # Additional I/O support
+  - pyhdf  # HDF4/HDF-EOS for MODIS
+
+  # Development tools
+  - pytest
+  - pytest-cov
+  - mypy
+  - black
+  - isort
+
+  # Install davinci-monet in editable mode
+  - pip
+  - pip:
+    - -e ".[dev]"

@@ -27,10 +27,10 @@ black davinci_monet && isort davinci_monet
 
 **Name**: `davinci-monet`
 
-**Created with**:
+**Create from environment.yml**:
 ```bash
-conda create --name davinci-monet -c conda-forge python=3.11 \
-    melodies-monet pydantic mypy pytest pytest-cov black isort
+conda env create -f environment.yml
+conda activate davinci-monet
 ```
 
 **Key packages** (inherited from melodies-monet):
@@ -39,7 +39,10 @@ conda create --name davinci-monet -c conda-forge python=3.11 \
 - matplotlib, cartopy - plotting
 - netCDF4 - file I/O
 
-**Added for development**:
+**Additional I/O support**:
+- pyhdf - HDF4/HDF-EOS for MODIS satellite data
+
+**Development tools**:
 - pydantic - configuration validation
 - mypy - static type checking
 - pytest, pytest-cov - testing
