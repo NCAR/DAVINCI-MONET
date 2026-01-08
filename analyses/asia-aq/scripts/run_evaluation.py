@@ -21,6 +21,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+# Cartopy for map projections
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
 # DAVINCI-MONET imports
 from davinci_monet.models.cesm import open_cesm
 from davinci_monet.pairing.engine import PairingEngine
@@ -438,7 +442,7 @@ def plot_scatter(paired: dict, title: str, xlabel: str, ylabel: str, outfile: Pa
 
 
 def plot_spatial_bias(paired: dict, title: str, outfile: Path, vmin: float = None, vmax: float = None):
-    """Create spatial map of model bias."""
+    """Create spatial map of model bias with geographic features."""
     if paired is None:
         return
 
@@ -450,7 +454,26 @@ def plot_spatial_bias(paired: dict, title: str, outfile: Path, vmin: float = Non
     df = pd.DataFrame({"lat": lats, "lon": lons, "bias": bias})
     site_bias = df.groupby(["lat", "lon"]).mean().reset_index()
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # Create figure with cartopy projection
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+
+    # Set map extent
+    ax.set_extent([DOMAIN["lon_min"], DOMAIN["lon_max"],
+                   DOMAIN["lat_min"], DOMAIN["lat_max"]], crs=ccrs.PlateCarree())
+
+    # Add geographic features
+    ax.add_feature(cfeature.LAND, facecolor="lightgray", zorder=0)
+    ax.add_feature(cfeature.OCEAN, facecolor="lightblue", zorder=0)
+    ax.add_feature(cfeature.COASTLINE, linewidth=0.8, edgecolor="black")
+    ax.add_feature(cfeature.BORDERS, linewidth=0.5, linestyle=":", edgecolor="gray")
+    ax.add_feature(cfeature.LAKES, facecolor="lightblue", edgecolor="gray", linewidth=0.3)
+    ax.add_feature(cfeature.RIVERS, edgecolor="lightblue", linewidth=0.3)
+
+    # Add gridlines
+    gl = ax.gridlines(draw_labels=True, linewidth=0.5, alpha=0.5, linestyle="--")
+    gl.top_labels = False
+    gl.right_labels = False
 
     # Determine color limits
     if vmin is None:
@@ -458,23 +481,18 @@ def plot_spatial_bias(paired: dict, title: str, outfile: Path, vmin: float = Non
         vmin = -vmax_abs
         vmax = vmax_abs
 
+    # Plot bias as scatter points
     scatter = ax.scatter(
         site_bias["lon"], site_bias["lat"],
         c=site_bias["bias"], cmap="RdBu_r",
-        s=100, vmin=vmin, vmax=vmax,
-        edgecolors="black", linewidths=0.5
+        s=120, vmin=vmin, vmax=vmax,
+        edgecolors="black", linewidths=0.5,
+        transform=ccrs.PlateCarree(), zorder=5
     )
 
-    plt.colorbar(scatter, ax=ax, label="Bias (Model - Obs)", shrink=0.8)
+    plt.colorbar(scatter, ax=ax, label="Bias (Model - Obs)", shrink=0.7, pad=0.02)
 
-    ax.set_xlabel("Longitude", fontsize=12)
-    ax.set_ylabel("Latitude", fontsize=12)
     ax.set_title(title, fontsize=14)
-    ax.set_xlim(DOMAIN["lon_min"], DOMAIN["lon_max"])
-    ax.set_ylim(DOMAIN["lat_min"], DOMAIN["lat_max"])
-
-    # Add simple coastline approximation
-    ax.axhline(y=0, color="gray", linestyle="-", linewidth=0.5, alpha=0.5)
 
     plt.tight_layout()
 
