@@ -1,0 +1,9 @@
+# Output files - plots and statistics
+output/
+
+# Data files (downloaded observations, intermediate files)
+data/
+
+# Python cache
+__pycache__/
+*.pyc

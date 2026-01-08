@@ -1,0 +1,114 @@
+# ASIA-AQ CESM/CAM-chem Evaluation Configuration
+# Model: f.e3b06m.FCnudged.t6s.01x01.01 (0.1 deg, 32 levels)
+# Period: February 1-3, 2024
+
+analysis:
+  start_time: "2024-02-01"
+  end_time: "2024-02-03"
+  output_dir: ../output/cesm_surface
+  debug: false
+
+model:
+  cesm_asiaq:
+    mod_type: cesm_fv
+    files: ~/Data/ASIA-AQ/f.e3b06m.FCnudged.t6s.01x01.01.cam.h2i.*.nc
+    # Model output is hourly, 0.1 deg resolution
+    radius_of_influence: 15000  # 15 km for 0.1 deg grid
+    # Variable mapping from obs standard names to CESM variable names
+    mapping:
+      openaq:
+        o3: O3
+        no2: NO2
+        co: CO
+        pm25: PM25
+    # Unit conversions: CESM outputs mol/mol, need ppb for trace gases
+    variables:
+      O3:
+        # mol/mol to ppb: multiply by 1e9
+        scale: 1.0e9
+        ylabel_plot: "O3 (ppbv)"
+        vmin_plot: 0
+        vmax_plot: 120
+        vdiff_plot: 40
+      NO2:
+        scale: 1.0e9
+        ylabel_plot: "NO2 (ppbv)"
+        vmin_plot: 0
+        vmax_plot: 40
+        vdiff_plot: 20
+      CO:
+        scale: 1.0e9
+        ylabel_plot: "CO (ppbv)"
+        vmin_plot: 0
+        vmax_plot: 500
+        vdiff_plot: 100
+      PM25:
+        # mol/mol to ug/m3 requires density conversion (approximate)
+        scale: 1.0e9
+        ylabel_plot: "PM2.5 (ug/m3)"
+        vmin_plot: 0
+        vmax_plot: 100
+        vdiff_plot: 50
+
+# Observation data - placeholder for when data is acquired
+# Options: OpenAQ (surface), ICARTT (aircraft), TROPOMI (satellite)
+obs:
+  openaq_asia:
+    obs_type: openaq
+    # Will need to download OpenAQ data for ASIA-AQ domain
+    filename: ../data/openaq_asiaq_202402.nc
+    variables:
+      o3:
+        obs_min: 0
+        obs_max: 200
+      no2:
+        obs_min: 0
+        obs_max: 100
+      co:
+        obs_min: 0
+        obs_max: 5000
+      pm25:
+        obs_min: 0
+        obs_max: 500
+
+# Plotting configuration
+plots:
+  timeseries_o3:
+    type: timeseries
+    domain_type: [all]
+    domain_name: [ASIA]
+    data: [cesm_asiaq_openaq_asia]
+
+  scatter_o3:
+    type: scatter
+    domain_type: [all]
+    domain_name: [ASIA]
+    data: [cesm_asiaq_openaq_asia]
+
+  diurnal_o3:
+    type: diurnal
+    domain_type: [all]
+    domain_name: [ASIA]
+    data: [cesm_asiaq_openaq_asia]
+
+  spatial_bias:
+    type: spatial_bias
+    domain_type: [all]
+    domain_name: [ASIA]
+    data: [cesm_asiaq_openaq_asia]
+
+# Statistics to compute
+stats:
+  output_table: true
+  output_table_kwargs:
+    precision: 3
+  metrics:
+    - N        # Number of pairs
+    - MO       # Mean observation
+    - MP       # Mean prediction
+    - MB       # Mean bias
+    - RMSE     # Root mean square error
+    - R        # Correlation coefficient
+    - NMB      # Normalized mean bias
+    - NME      # Normalized mean error
+    - IOA      # Index of agreement
