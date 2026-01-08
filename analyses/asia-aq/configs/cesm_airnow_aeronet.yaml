@@ -8,7 +8,7 @@
 analysis:
   start_time: "2024-02-01"
   end_time: "2024-02-03"
-  output_dir: output/cesm_evaluation
+  output_dir: output
   debug: false
 
 # Model configuration
@@ -26,7 +26,7 @@ model:
         no2: NO2
         co: CO
       aeronet:
-        aod_550nm: AODVISdn
+        aod_551nm: AODVISdn
 
     # Model variable configurations with unit conversions
     variables:
@@ -89,10 +89,10 @@ obs:
     obs_type: pt_sfc
     filename: data/AERONET_L15_20240201_20240203.nc
     variables:
-      aod_550nm:
+      aod_551nm:
         obs_min: 0
         obs_max: 5.0
-        ylabel_plot: "AOD (550 nm)"
+        ylabel_plot: "AOD (551 nm)"
 
 # Pairing groups (which model-obs combinations to analyze)
 pairs:
@@ -115,7 +115,7 @@ pairs:
     obs: aeronet
     variable:
       model_var: AODVISdn
-      obs_var: aod_550nm
+      obs_var: aod_551nm
 
 # Plotting configuration
 plots:

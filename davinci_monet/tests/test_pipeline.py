@@ -70,8 +70,8 @@ def sample_paired_dataset() -> xr.Dataset:
 
     return xr.Dataset(
         {
-            "o3_model": (["time"], model_vals),
-            "o3_obs": (["time"], obs_vals),
+            "model_o3": (["time"], model_vals),
+            "obs_o3": (["time"], obs_vals),
             "latitude": (["time"], np.full(n_times, 40.0)),
             "longitude": (["time"], np.full(n_times, -105.0)),
         },

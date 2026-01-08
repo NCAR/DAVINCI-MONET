@@ -260,15 +260,6 @@ class PointStrategy(BasePairingStrategy):
         xr.Dataset
             Combined dataset with both obs and model values.
         """
-        # Align dimensions
-        common_dims = set(obs.dims) & set(model_at_sites.dims)
-
-        # Combine coordinates
-        coords = dict(obs.coords)
-        for coord in model_at_sites.coords:
-            if coord not in coords:
-                coords[coord] = model_at_sites.coords[coord]
-
         # Combine data variables
         data_vars: dict[str, Any] = {}
 
@@ -276,9 +267,16 @@ class PointStrategy(BasePairingStrategy):
         for var in obs.data_vars:
             data_vars[str(var)] = obs[var]
 
-        # Add model variables (with model_ prefix to avoid conflicts)
+        # Add model variables - reassign to obs coordinates to ensure alignment
+        # Model was extracted at same site/time locations, just with integer indices
         for var in model_at_sites.data_vars:
-            model_var_name = f"model_{var}"
-            data_vars[model_var_name] = model_at_sites[var]
+            # Create new DataArray with observation coordinates
+            model_da = xr.DataArray(
+                model_at_sites[var].values,
+                dims=obs[list(obs.data_vars)[0]].dims,
+                coords={d: obs.coords[d] for d in obs[list(obs.data_vars)[0]].dims if d in obs.coords},
+                name=var,
+            )
+            data_vars[str(var)] = model_da
 
-        return xr.Dataset(data_vars, coords=coords)
+        return xr.Dataset(data_vars, coords=dict(obs.coords))

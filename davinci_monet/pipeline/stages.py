@@ -240,6 +240,16 @@ class LoadModelsStage(BaseStage):
                     variables=var_list,
                     label=label,
                 )
+
+                # Apply unit scaling if configured
+                if isinstance(variables, dict):
+                    for var_name, var_config in variables.items():
+                        if isinstance(var_config, dict) and "unit_scale" in var_config:
+                            scale = var_config["unit_scale"]
+                            method = var_config.get("unit_scale_method", "*")
+                            if var_name in model_data.data.data_vars:
+                                model_data.apply_unit_scale(var_name, scale, method)
+
                 context.models[label] = model_data
                 loaded_count += 1
             except Exception as e:
@@ -319,6 +329,16 @@ class LoadObservationsStage(BaseStage):
                     filename=filename,
                     variables=variables,
                 )
+
+                # Apply unit scaling if configured
+                if isinstance(variables, dict):
+                    for var_name, var_config in variables.items():
+                        if isinstance(var_config, dict) and "unit_scale" in var_config:
+                            scale = var_config["unit_scale"]
+                            method = var_config.get("unit_scale_method", "*")
+                            if var_name in obs_data.data.data_vars:
+                                obs_data.apply_unit_scale(var_name, scale, method)
+
                 context.observations[label] = obs_data
                 loaded_count += 1
             except Exception as e:
@@ -441,8 +461,10 @@ class StatisticsStage(BaseStage):
 
         stats_config = context.config.get("stats", {})
 
-        for pair_key, paired_data in context.paired.items():
+        for pair_key, paired_obj in context.paired.items():
             try:
+                # Handle PairedData objects
+                paired_data = paired_obj.data if hasattr(paired_obj, "data") else paired_obj
                 # Calculate basic statistics
                 pair_stats = self._calculate_stats(paired_data, stats_config)
                 stats_results[pair_key] = pair_stats
@@ -465,13 +487,12 @@ class StatisticsStage(BaseStage):
 
         stats: dict[str, Any] = {}
 
-        # Find model and obs variable pairs
-        model_vars = [v for v in paired_data.data_vars if v.endswith("_model")]
-        obs_vars = [v for v in paired_data.data_vars if v.endswith("_obs")]
+        # Find model and obs variable pairs (prefix format: model_*, obs_*)
+        model_vars = [v for v in paired_data.data_vars if v.startswith("model_")]
 
         for model_var in model_vars:
-            base_name = model_var.replace("_model", "")
-            obs_var = f"{base_name}_obs"
+            base_name = model_var.replace("model_", "", 1)
+            obs_var = f"obs_{base_name}"
 
             if obs_var not in paired_data:
                 continue
@@ -516,6 +537,11 @@ class PlottingStage(BaseStage):
     def execute(self, context: PipelineContext) -> StageResult:
         """Generate plots from paired data."""
         import time
+        from pathlib import Path
+
+        import matplotlib.pyplot as plt
+
+        from davinci_monet.plots import get_plotter
 
         start = time.time()
         plots_generated: list[str] = []
@@ -530,8 +556,81 @@ class PlottingStage(BaseStage):
                 duration=time.time() - start,
             )
 
-        # TODO: Implement plotting when Phase 9 is complete
-        # For now, return completed with placeholder
+        # Get output directory
+        analysis_config = context.config.get("analysis", {})
+        output_dir = Path(analysis_config.get("output_dir", "."))
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get pairs config for variable mapping
+        pairs_config = context.config.get("pairs", {})
+        model_config = context.config.get("model", {})
+
+        for plot_name, plot_spec in plot_config.items():
+            try:
+                plot_type = plot_spec.get("type", "scatter")
+                plot_pairs = plot_spec.get("pairs", [])
+                title = plot_spec.get("title", plot_name)
+
+                for pair_name in plot_pairs:
+                    # Get pair configuration
+                    pair_spec = pairs_config.get(pair_name, {})
+                    model_label = pair_spec.get("model", "")
+                    obs_label = pair_spec.get("obs", "")
+                    var_spec = pair_spec.get("variable", {})
+                    obs_var = var_spec.get("obs_var", "")
+
+                    # Find paired data
+                    pair_key = f"{model_label}_{obs_label}"
+                    if pair_key not in context.paired:
+                        continue
+
+                    paired_obj = context.paired[pair_key]
+                    paired_data = paired_obj.data if hasattr(paired_obj, "data") else paired_obj
+
+                    # Variable names in paired dataset use obs_var with prefixes
+                    obs_var_name = f"obs_{obs_var}"
+                    model_var_name = f"model_{obs_var}"
+
+                    if obs_var_name not in paired_data or model_var_name not in paired_data:
+                        continue
+
+                    # Get plotter config from model variable settings
+                    model_var = var_spec.get("model_var", "")
+                    var_config = model_config.get(model_label, {}).get("variables", {}).get(model_var, {})
+                    vmin = var_config.get("vmin_plot")
+                    vmax = var_config.get("vmax_plot")
+                    vdiff = var_config.get("vdiff_plot")
+
+                    # Build plotter config
+                    plotter_config = {"title": title}
+                    if plot_type == "spatial_bias":
+                        plotter_config["vmin"] = -vdiff if vdiff else None
+                        plotter_config["vmax"] = vdiff if vdiff else None
+                    else:
+                        plotter_config["vmin"] = vmin
+                        plotter_config["vmax"] = vmax
+
+                    # Get plotter and generate plot
+                    plotter = get_plotter(plot_type, config=plotter_config)
+                    fig = plotter.plot(paired_data, obs_var_name, model_var_name)
+
+                    # Save plot
+                    output_path = output_dir / f"{plot_name}.png"
+                    plotter.save(fig, output_path, dpi=300)
+                    plots_generated.append(str(output_path))
+
+                    # Also save PDF
+                    pdf_path = output_dir / f"{plot_name}.pdf"
+                    plotter.save(fig, pdf_path)
+                    plots_generated.append(str(pdf_path))
+
+                    plt.close(fig)
+
+            except Exception as e:
+                context.metadata.setdefault("plot_errors", []).append(
+                    f"{plot_name}: {e}"
+                )
+
         return self._create_result(
             StageStatus.COMPLETED,
             data={"plots_generated": plots_generated},
@@ -548,26 +647,48 @@ class SaveResultsStage(BaseStage):
     def execute(self, context: PipelineContext) -> StageResult:
         """Save analysis results to files."""
         import time
+        from pathlib import Path
 
-        from davinci_monet.io import write_dataset
+        import pandas as pd
 
         start = time.time()
         saved_files: list[str] = []
 
-        output_config = context.config.get("output", {})
-        output_dir = output_config.get("dir", ".")
+        # Get output directory from analysis config
+        analysis_config = context.config.get("analysis", {})
+        output_dir = Path(analysis_config.get("output_dir", "."))
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Save paired data
-        for pair_key, paired_data in context.paired.items():
-            try:
-                if isinstance(paired_data, xr.Dataset):
-                    filename = f"{output_dir}/{pair_key}_paired.nc"
-                    write_dataset(paired_data, filename)
-                    saved_files.append(filename)
-            except Exception as e:
-                context.metadata.setdefault("save_errors", []).append(
-                    f"{pair_key}: {e}"
-                )
+        # Save statistics summary from statistics stage
+        stats_result = context.results.get("statistics")
+        if stats_result and stats_result.data:
+            rows = []
+            for pair_key, pair_stats in stats_result.data.items():
+                for var_name, var_stats in pair_stats.items():
+                    row = {"Variable": var_name}
+                    row["N"] = var_stats.get("n", 0)
+                    row["Mean_Obs"] = var_stats.get("obs_mean", float("nan"))
+                    row["Mean_Model"] = var_stats.get("model_mean", float("nan"))
+                    row["MB"] = var_stats.get("mean_bias", float("nan"))
+                    row["RMSE"] = var_stats.get("rmse", float("nan"))
+                    row["R"] = var_stats.get("correlation", float("nan"))
+                    # Calculate NMB and NME
+                    obs_mean = var_stats.get("obs_mean", 0)
+                    if obs_mean != 0:
+                        row["NMB_%"] = (var_stats.get("mean_bias", 0) / obs_mean) * 100
+                        row["NME_%"] = (var_stats.get("rmse", 0) / abs(obs_mean)) * 100
+                    else:
+                        row["NMB_%"] = float("nan")
+                        row["NME_%"] = float("nan")
+                    row["IOA"] = var_stats.get("ioa", float("nan"))
+                    rows.append(row)
+
+            if rows:
+                df = pd.DataFrame(rows)
+                df = df.set_index("Variable")
+                stats_file = output_dir / "statistics_summary.csv"
+                df.to_csv(stats_file)
+                saved_files.append(str(stats_file))
 
         return self._create_result(
             StageStatus.COMPLETED,

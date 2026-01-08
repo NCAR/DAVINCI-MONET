@@ -333,7 +333,10 @@ class BasePairingStrategy(ABC):
             return model
 
         if method == "nearest":
-            return model.sel(time=target_times, method="nearest")
+            # Select nearest times and assign target times as coordinate
+            # This ensures alignment when combining with observation data
+            result = model.sel(time=target_times, method="nearest")
+            return result.assign_coords(time=target_times.values)
         else:
             return model.interp(time=target_times, method=method)  # type: ignore[arg-type]
 

@@ -355,9 +355,10 @@ class TestPointStrategy:
         strategy = PointStrategy()
         paired = strategy.pair(model_2d, point_obs, radius_of_influence=100000.0)
 
-        # Should have both obs and model variables
-        assert "temperature" in paired.data_vars
-        assert "model_temperature" in paired.data_vars
+        # Should have both obs and model variables (model vars keep original names)
+        # Prefixing is done by create_paired_dataset in the engine, not the strategy
+        assert "temperature" in paired.data_vars  # Model var (same name as obs in this test)
+        assert "humidity" in paired.data_vars
 
         # Should have site dimension
         assert "site" in paired.dims
@@ -367,7 +368,8 @@ class TestPointStrategy:
         strategy = PointStrategy()
         paired = strategy.pair(model_3d, point_obs, radius_of_influence=200000.0)
 
-        assert "model_temperature" in paired.data_vars
+        # Model variables keep original names (prefixing done by engine)
+        assert "temperature" in paired.data_vars
         # Surface extraction removes z dimension
         assert "z" not in paired.dims
 
