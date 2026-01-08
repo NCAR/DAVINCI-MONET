@@ -100,7 +100,7 @@ davinci_monet/
 
 ## Implementation Status
 
-**STATUS: COMPLETE** - All 12 phases implemented with 732+ tests passing.
+**STATUS: COMPLETE** - All 12 phases implemented with 745 tests passing.
 
 | Phase | Description | Status |
 |-------|-------------|--------|
@@ -118,6 +118,89 @@ davinci_monet/
 | 12 | Documentation & Examples | COMPLETE |
 
 See `PLAN.md` for detailed implementation plan.
+
+## Running Analyses
+
+**ALL analysis scripts MUST use DAVINCI-MONET pipelines.** Do not write custom pairing/plotting scripts.
+
+### Pipeline Stages
+
+The standard pipeline executes these stages in order:
+1. `load_models` - Load model data, apply unit conversions
+2. `load_observations` - Load observation data, apply unit conversions
+3. `pairing` - Pair model with observations using geometry-specific strategies
+4. `statistics` - Calculate evaluation metrics (N, MB, RMSE, R, NMB, NME, IOA)
+5. `plotting` - Generate scatter, spatial bias, time series plots
+6. `save_results` - Write statistics to CSV
+
+### Running a Pipeline
+
+```python
+from davinci_monet.pipeline.runner import run_analysis
+
+result = run_analysis("path/to/config.yaml")
+if result.success:
+    print(f"Completed in {result.total_duration_seconds:.1f}s")
+```
+
+Or via CLI:
+```bash
+davinci-monet run path/to/config.yaml
+```
+
+### YAML Configuration Pattern
+
+```yaml
+analysis:
+  start_time: "2024-02-01"
+  end_time: "2024-02-03"
+  output_dir: output
+
+model:
+  my_model:
+    mod_type: cesm_fv  # or cmaq, wrfchem, ufs, generic
+    files: /path/to/model/*.nc
+    radius_of_influence: 15000
+    variables:
+      PM25:
+        unit_scale: 1.2e9  # kg/kg to µg/m³
+      O3:
+        unit_scale: 1.0e9  # mol/mol to ppb
+
+obs:
+  my_obs:
+    obs_type: pt_sfc
+    filename: data/observations.nc
+    variables:
+      pm25:
+        obs_min: 0
+        obs_max: 500
+
+pairs:
+  model_obs_pm25:
+    model: my_model
+    obs: my_obs
+    variable:
+      model_var: PM25
+      obs_var: pm25
+
+plots:
+  pm25_scatter:
+    type: scatter
+    pairs: [model_obs_pm25]
+    title: "PM2.5 Model vs Observations"
+
+stats:
+  metrics: [N, MB, RMSE, R, NMB, NME, IOA]
+```
+
+### Variable Naming Convention
+
+Paired datasets use **prefix** format:
+- `model_pm25` - Model values
+- `obs_pm25` - Observation values
+
+NOT suffix format (`pm25_model`, `pm25_obs`).
 
 ## Key Design Patterns
 
@@ -149,3 +232,41 @@ Paired:  xr.Dataset with aligned model + obs variables
 
 - Full compatibility with existing MELODIES-MONET YAML configuration files
 - Continues using monet/monetio libraries for data I/O
+
+## Working Example: ASIA-AQ Analysis
+
+Reference implementation in `analyses/asia-aq/`:
+
+```
+analyses/asia-aq/
+├── configs/
+│   └── cesm_airnow_aeronet.yaml    # Pipeline configuration
+├── scripts/
+│   ├── download_airnow.py          # Data download
+│   └── run_evaluation.py           # Pipeline execution
+├── data/                           # Observation data
+├── output/                         # Plots and statistics
+└── misc/                           # Exploratory scripts (not part of workflow)
+```
+
+**Model data location**: `~/Data/ASIA-AQ/`
+
+**Run the analysis**:
+```bash
+cd analyses/asia-aq
+python scripts/run_evaluation.py
+```
+
+## Common Gotchas
+
+1. **Unit conversions**: Model variables often need `unit_scale` in config:
+   - CESM mixing ratios (mol/mol) → ppb: `unit_scale: 1.0e9`
+   - CESM PM mass (kg/kg) → µg/m³: `unit_scale: 1.2e9`
+
+2. **AERONET wavelengths**: Use `aod_500nm` or `aod_440nm` for Asia (not `aod_551nm`)
+
+3. **CESM vertical levels**: Surface is `lev=-1` after `open_cesm` processing (inverted)
+
+4. **Observation coordinates**: Must have `latitude`, `longitude` as coordinates or variables
+
+5. **Time alignment**: Pipeline uses nearest-neighbor interpolation for model→obs times

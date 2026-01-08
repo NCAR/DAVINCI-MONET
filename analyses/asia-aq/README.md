@@ -32,41 +32,68 @@ ASIA-AQ was an international cooperative field study conducted from January-Marc
 **Location:** `~/Data/ASIA-AQ/`
 
 **Key Variables:**
-| Variable | Description |
-|----------|-------------|
-| O3 | Ozone concentration |
-| NO | Nitric oxide |
-| NO2 | Nitrogen dioxide |
-| CO | Carbon monoxide |
-| CH2O | Formaldehyde |
-| PM25 | PM2.5 concentration |
-| AODVISdn | Aerosol optical depth at 550 nm |
+| Variable | Description | Unit Conversion |
+|----------|-------------|-----------------|
+| O3 | Ozone | × 1e9 (mol/mol → ppb) |
+| NO2 | Nitrogen dioxide | × 1e9 (mol/mol → ppb) |
+| CO | Carbon monoxide | × 1e9 (mol/mol → ppb) |
+| PM25 | PM2.5 | × 1.2e9 (kg/kg → µg/m³) |
+| AODVISdn | Aerosol optical depth (550 nm) | none |
 
 ## Observation Data
 
-| Type | Source | Status |
-|------|--------|--------|
-| Aircraft | ICARTT from DC-8/G-III | Pending download |
-| Surface | OpenAQ (regional stations) | Pending |
-| Satellite | TROPOMI NO2/CO | Pending |
-| Satellite | GEMS NO2 (geostationary) | Pending |
+| Type | Source | Variables | Status |
+|------|--------|-----------|--------|
+| Surface | AirNow | PM2.5, O3, NO2, CO | ✓ Complete |
+| Surface | AERONET | AOD (500 nm) | ✓ Complete |
+| Aircraft | ICARTT from DC-8/G-III | Various | Pending |
+| Satellite | TROPOMI NO2/CO | NO2, CO | Pending |
 
 ## Directory Structure
 
 ```
 asia-aq/
-├── README.md           # This file
-├── configs/            # YAML configuration files
-├── scripts/            # Analysis Python scripts
-└── output/             # Generated plots and statistics
+├── README.md
+├── configs/
+│   └── cesm_airnow_aeronet.yaml    # Pipeline configuration
+├── scripts/
+│   ├── download_airnow.py          # Download AirNow data
+│   └── run_evaluation.py           # Run pipeline
+├── data/                           # Observation data (NetCDF)
+├── output/                         # Plots and statistics
+└── misc/                           # Exploratory scripts
 ```
 
 ## Usage
 
+**Download observations:**
 ```bash
-# Explore model data
-python scripts/explore_model.py
-
-# Run analysis (when configured)
-davinci-monet run configs/cesm_aircraft.yaml
+python scripts/download_airnow.py
+davinci-monet get aeronet -s 2024-02-01 -e 2024-02-03 -d data
 ```
+
+**Run the evaluation pipeline:**
+```bash
+python scripts/run_evaluation.py
+```
+
+Or via CLI:
+```bash
+davinci-monet run configs/cesm_airnow_aeronet.yaml
+```
+
+## Results
+
+| Species | N | Mean Obs | Mean Model | R | NMB |
+|---------|---|----------|------------|------|------|
+| PM2.5 | 98 | 37.9 µg/m³ | 48.5 µg/m³ | 0.36 | +28% |
+| O3 | 14 | 11.4 ppb | 3.1 ppb | 0.54 | -73% |
+| NO2 | 5 | 21.4 ppb | 50.9 ppb | 0.72 | +138% |
+| CO | 12 | 1375 ppb | 1182 ppb | -0.16 | -14% |
+| AOD | 498 | 0.43 | 0.19 | 0.59 | -55% |
+
+**Output files:**
+- `output/statistics_summary.csv` - Evaluation metrics
+- `output/*_scatter.png` - Model vs obs scatter plots
+- `output/*_timeseries.png` - Time series comparisons
+- `output/*_spatial_bias.png` - Spatial bias maps
