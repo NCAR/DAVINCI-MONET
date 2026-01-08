@@ -273,11 +273,18 @@ class LoadObservationsStage(BaseStage):
     def execute(self, context: PipelineContext) -> StageResult:
         """Load observation data from configuration."""
         import time
+        from glob import glob
+        from pathlib import Path
+
+        import xarray as xr
 
         from davinci_monet.observations import create_observation_data
 
         start = time.time()
         obs_config = context.config.get("obs") or context.config.get("observations", {})
+
+        # Use current working directory for relative paths
+        base_path = Path.cwd()
 
         loaded_count = 0
         for label, config in obs_config.items():
@@ -286,9 +293,29 @@ class LoadObservationsStage(BaseStage):
                 filename = config.get("filename")
                 variables = config.get("variables", {})
 
+                # Load data from file
+                data = None
+                if filename:
+                    file_path = Path(filename)
+                    # Handle relative paths
+                    if not file_path.is_absolute():
+                        file_path = base_path / file_path
+
+                    # Expand user home directory
+                    file_path = file_path.expanduser()
+
+                    # Handle glob patterns
+                    if "*" in str(file_path) or "?" in str(file_path):
+                        files = sorted(glob(str(file_path)))
+                        if files:
+                            data = xr.open_mfdataset(files, combine="by_coords")
+                    elif file_path.exists():
+                        data = xr.open_dataset(str(file_path))
+
                 obs_data = create_observation_data(
                     label=label,
                     obs_type=obs_type,
+                    data=data,
                     filename=filename,
                     variables=variables,
                 )
@@ -326,13 +353,13 @@ class PairingStage(BaseStage):
         """Pair model and observation data."""
         import time
 
-        from davinci_monet.pairing import PairingEngine
+        from davinci_monet.pairing import PairingEngine, PairingConfig
 
         start = time.time()
         paired_count = 0
 
         # Get pairing configuration
-        pairing_config = context.config.get("pairing", {})
+        pairing_config_dict = context.config.get("pairing", {})
 
         engine = PairingEngine()
 
@@ -341,11 +368,19 @@ class PairingStage(BaseStage):
                 try:
                     pair_key = f"{model_label}_{obs_label}"
 
-                    # Skip if not in model-obs mapping
+                    # Get model-obs variable mapping
                     model_config = context.config.get("model", {}).get(model_label, {})
                     mapping = model_config.get("mapping", {})
                     if mapping and obs_label not in mapping:
                         continue
+
+                    # Extract variable mappings: {obs_var: model_var}
+                    var_mapping = mapping.get(obs_label, {})
+                    if not var_mapping:
+                        continue
+
+                    obs_vars = list(var_mapping.keys())
+                    model_vars = list(var_mapping.values())
 
                     # Get model and obs datasets
                     model_ds = model_data.data if hasattr(model_data, "data") else model_data
@@ -354,12 +389,20 @@ class PairingStage(BaseStage):
                     if model_ds is None or obs_ds is None:
                         continue
 
+                    # Build pairing config
+                    radius = model_config.get("radius_of_influence", 12000.0)
+                    pairing_cfg = PairingConfig(
+                        radius_of_influence=radius,
+                        time_tolerance=pairing_config_dict.get("time_tolerance", "1h"),
+                    )
+
                     # Pair data
                     paired_ds = engine.pair(
                         model_ds,
                         obs_ds,
-                        radius=pairing_config.get("radius_of_influence", 1e6),
-                        time_tolerance=pairing_config.get("time_tolerance", "1h"),
+                        obs_vars=obs_vars,
+                        model_vars=model_vars,
+                        config=pairing_cfg,
                     )
 
                     context.paired[pair_key] = paired_ds

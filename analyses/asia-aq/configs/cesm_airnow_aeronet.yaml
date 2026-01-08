@@ -8,14 +8,14 @@
 analysis:
   start_time: "2024-02-01"
   end_time: "2024-02-03"
-  output_dir: ../output/cesm_evaluation
+  output_dir: output/cesm_evaluation
   debug: false
 
 # Model configuration
 model:
   cesm_asiaq:
     mod_type: cesm_fv
-    files: ~/Data/ASIA-AQ/f.e3b06m.FCnudged.t6s.01x01.01.cam.h2i.*.nc
+    files: /Users/fillmore/Data/ASIA-AQ/f.e3b06m.FCnudged.t6s.01x01.01.cam.h2i.*.nc
     radius_of_influence: 15000  # 15 km for 0.1 deg grid
 
     # Variable mapping: obs_label -> {model_var: obs_var}
@@ -49,7 +49,7 @@ model:
         vmax_plot: 1000
         vdiff_plot: 200
       PM25:
-        unit_scale: 1.0  # Assume already in ug/m3 or needs proper conversion
+        unit_scale: 1.2e9  # kg/kg to ug/m3 (× air density × 1e9)
         ylabel_plot: "PM2.5 (μg/m³)"
         vmin_plot: 0
         vmax_plot: 150
@@ -65,7 +65,7 @@ model:
 obs:
   airnow:
     obs_type: pt_sfc
-    filename: ../data/airnow_asiaq_2024-02-01_2024-02-03.nc
+    filename: data/airnow_asiaq_2024-02-01_2024-02-03.nc
     variables:
       pm25:
         obs_min: 0
@@ -87,7 +87,7 @@ obs:
 
   aeronet:
     obs_type: pt_sfc
-    filename: ../data/AERONET_L15_20240201_20240203.nc
+    filename: data/AERONET_L15_20240201_20240203.nc
     variables:
       aod_550nm:
         obs_min: 0
