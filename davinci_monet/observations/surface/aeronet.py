@@ -216,6 +216,86 @@ class AERONETReader:
         return AERONET_VARIABLE_MAPPING
 
 
+def _dataframe_to_xarray(df: pd.DataFrame) -> xr.Dataset:
+    """Convert AERONET DataFrame from monetio to xarray Dataset.
+
+    This function is used by the CLI to convert monetio output to xarray format
+    suitable for saving as NetCDF.
+
+    Parameters
+    ----------
+    df
+        DataFrame from monetio.obs.aeronet.add_data().
+
+    Returns
+    -------
+    xr.Dataset
+        Dataset with dimensions (time, site) and coordinate variables.
+    """
+    if df is None or df.empty:
+        raise DataFormatError("Empty DataFrame provided")
+
+    # Ensure required columns exist
+    required = ["time", "siteid"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise DataFormatError(f"Missing required columns: {missing}")
+
+    # Get unique sites with their coordinates
+    coord_cols = ["latitude", "longitude", "elevation"]
+    available_coords = [c for c in coord_cols if c in df.columns]
+
+    sites_df = df.groupby("siteid")[available_coords].first().reset_index()
+    site_ids = sites_df["siteid"].tolist()
+
+    # Get unique times
+    times = pd.to_datetime(df["time"].unique()).sort_values()
+
+    # Identify data columns (exclude metadata columns)
+    meta_cols = ["siteid", "time", "latitude", "longitude", "elevation",
+                 "day_of_year", "day_of_year(fraction)"]
+    data_cols = [c for c in df.columns if c not in meta_cols]
+
+    # Create data arrays for each variable
+    data_vars = {}
+    for col in data_cols:
+        # Initialize with NaN
+        data = np.full((len(times), len(site_ids)), np.nan)
+
+        # Fill in values
+        for i, t in enumerate(times):
+            time_df = df[df["time"] == t]
+            for j, sid in enumerate(site_ids):
+                site_df = time_df[time_df["siteid"] == sid]
+                if not site_df.empty and col in site_df.columns:
+                    val = site_df[col].iloc[0]
+                    if pd.notna(val):
+                        data[i, j] = val
+
+        # Only include if there's actual data
+        if not np.all(np.isnan(data)):
+            data_vars[col] = (["time", "site"], data)
+
+    # Create coordinates
+    coords = {
+        "time": times,
+        "site": site_ids,
+    }
+
+    # Add spatial coordinates
+    for coord in available_coords:
+        coords[coord] = ("site", sites_df[coord].values)
+
+    # Create dataset
+    ds = xr.Dataset(data_vars, coords=coords)
+
+    # Add attributes
+    ds.attrs["source"] = "AERONET"
+    ds.attrs["geometry"] = DataGeometry.POINT.value
+
+    return ds
+
+
 def open_aeronet(
     files: str | Path | Sequence[str | Path] | None = None,
     variables: Sequence[str] | None = None,

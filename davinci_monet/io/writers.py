@@ -20,6 +20,7 @@ def write_dataset(
     ds: xr.Dataset,
     path: str | Path,
     engine: str | None = None,
+    compress: bool = False,
     **kwargs: Any,
 ) -> None:
     """Write a dataset to file.
@@ -34,6 +35,8 @@ def write_dataset(
         Output file path.
     engine
         NetCDF engine to use.
+    compress
+        Whether to apply zlib compression to NetCDF variables.
     **kwargs
         Additional arguments passed to xarray.
 
@@ -58,6 +61,17 @@ def write_dataset(
             # Default to NetCDF
             if engine is None:
                 engine = "netcdf4"
+
+            # Handle compression
+            if compress:
+                encoding = kwargs.pop("encoding", {})
+                for var in ds.data_vars:
+                    if var not in encoding:
+                        encoding[var] = {}
+                    encoding[var].setdefault("zlib", True)
+                    encoding[var].setdefault("complevel", 4)
+                kwargs["encoding"] = encoding
+
             ds.to_netcdf(str(path), engine=engine, **kwargs)
     except Exception as e:
         raise DataFormatError(f"Failed to write {path}: {e}") from e
