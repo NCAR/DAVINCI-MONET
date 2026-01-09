@@ -11,6 +11,19 @@ analysis:
   output_dir: output
   debug: false
 
+  # City labels for spatial plots: {name: [lat, lon]}
+  city_labels:
+    Beijing: [39.9, 116.4]
+    Seoul: [37.5, 127.0]
+    Tokyo: [35.7, 139.7]
+    Shanghai: [31.2, 121.5]
+    Manila: [14.6, 121.0]
+    Bangkok: [13.75, 100.5]
+    Hanoi: [21.0, 105.85]
+    Singapore: [1.35, 103.8]
+    Kuala Lumpur: [3.15, 101.7]
+    Hong Kong: [22.3, 114.2]
+
 # Model configuration
 model:
   cesm_asiaq:
@@ -136,8 +149,6 @@ plots:
     type: spatial_bias
     pairs: [cesm_airnow_pm25]
     title: "PM2.5 Spatial Bias"
-    show_site_labels: true
-    label_sites: [Beijing, Guangzhou, Shenyang, Dhaka, Hanoi, Manila, Kuala Lumpur, Rangoon]
 
   # Ozone plots
   o3_timeseries:
@@ -169,9 +180,6 @@ plots:
     type: spatial_bias
     pairs: [cesm_aeronet_aod]
     title: "AOD Spatial Bias"
-    show_site_labels: true
-    site_label_var: site
-    label_sites: [Singapore, Manila_Observatory, Beijing-CAMS, Chiang_Mai_Met_Sta, Seoul_SNU, XiangHe]
 
 # Statistics configuration
 stats:

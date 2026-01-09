@@ -615,9 +615,15 @@ class PlottingStage(BaseStage):
                     for opt_key in ["show_site_labels", "show_individual_sites",
                                     "show_uncertainty", "uncertainty_type",
                                     "resample", "aggregate_dim", "label_sites",
-                                    "site_label_var"]:
+                                    "site_label_var", "city_labels"]:
                         if opt_key in plot_spec:
                             plot_options[opt_key] = plot_spec[opt_key]
+
+                    # Add city_labels from analysis config for spatial plots
+                    if plot_type.startswith("spatial") and "city_labels" not in plot_options:
+                        city_labels = analysis_config.get("city_labels")
+                        if city_labels:
+                            plot_options["city_labels"] = city_labels
 
                     # Get plotter and generate plot
                     plotter = get_plotter(plot_type, config=plotter_config)

@@ -75,6 +75,7 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
         show_site_labels: bool = False,
         site_label_var: str = "site_name",
         label_sites: list[str] | None = None,
+        city_labels: dict[str, tuple[float, float]] | None = None,
         label_fontsize: int = 8,
         **kwargs: Any,
     ) -> matplotlib.figure.Figure:
@@ -222,6 +223,29 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
                         alpha=0.8,
                         transform=ccrs.PlateCarree(),
                     )
+
+        # Add city labels if provided
+        if city_labels:
+            for city_name, (lat, lon) in city_labels.items():
+                ax.annotate(
+                    city_name,
+                    (lon, lat),
+                    xytext=(3, 3),
+                    textcoords="offset points",
+                    fontsize=label_fontsize,
+                    fontweight="bold",
+                    alpha=0.9,
+                    transform=ccrs.PlateCarree(),
+                )
+                # Add a small marker for the city location
+                ax.plot(
+                    lon, lat,
+                    marker="*",
+                    markersize=6,
+                    color="black",
+                    transform=ccrs.PlateCarree(),
+                    zorder=10,
+                )
 
         # Title
         var_label = get_variable_label(paired_data, obs_var)
