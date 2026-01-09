@@ -27,9 +27,9 @@ ASIA-AQ was an international cooperative field study conducted from January-Marc
 
 **Domain:** 0°-45°N, 90°-140°E (covers Southeast Asia, Korea, Taiwan, S. China, S. Japan)
 
-**Period:** February 1-3, 2024 (hourly output)
+**Period:** February 1-10, 2024 (hourly output)
 
-**Location:** `~/Data/ASIA-AQ/`
+**Location:** `~/Data/ASIA-AQ/CAM/`
 
 **Key Variables:**
 | Variable | Description | Unit Conversion |
@@ -95,5 +95,5 @@ davinci-monet run configs/cesm_airnow_aeronet.yaml
 **Output files:**
 - `output/statistics_summary.csv` - Evaluation metrics
 - `output/*_scatter.png` - Model vs obs scatter plots
-- `output/*_timeseries.png` - Time series comparisons
-- `output/*_spatial_bias.png` - Spatial bias maps
+- `output/*_timeseries.png` - Time series with uncertainty bands (mean ± std)
+- `output/*_spatial_bias.png` - Spatial bias maps with city labels
