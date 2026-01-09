@@ -614,7 +614,8 @@ class PlottingStage(BaseStage):
                     plot_options: dict[str, Any] = {}
                     for opt_key in ["show_site_labels", "show_individual_sites",
                                     "show_uncertainty", "uncertainty_type",
-                                    "resample", "aggregate_dim"]:
+                                    "resample", "aggregate_dim", "label_sites",
+                                    "site_label_var"]:
                         if opt_key in plot_spec:
                             plot_options[opt_key] = plot_spec[opt_key]
 

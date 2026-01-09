@@ -74,6 +74,7 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
         show_zero_line: bool = True,
         show_site_labels: bool = False,
         site_label_var: str = "site_name",
+        label_sites: list[str] | None = None,
         label_fontsize: int = 8,
         **kwargs: Any,
     ) -> matplotlib.figure.Figure:
@@ -208,8 +209,12 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
             for i, idx in enumerate(unique_idx):
                 site_idx = idx % len(site_labels) if len(site_labels) > 0 else 0
                 if site_idx < len(site_labels):
+                    site_name = str(site_labels[site_idx])
+                    # Filter to specific sites if label_sites is provided
+                    if label_sites is not None and site_name not in label_sites:
+                        continue
                     ax.annotate(
-                        str(site_labels[site_idx]),
+                        site_name,
                         (lons_flat[idx], lats_flat[idx]),
                         xytext=(3, 3),
                         textcoords="offset points",

@@ -137,6 +137,7 @@ plots:
     pairs: [cesm_airnow_pm25]
     title: "PM2.5 Spatial Bias"
     show_site_labels: true
+    label_sites: [Beijing, Guangzhou, Shenyang, Dhaka, Hanoi, Manila, Kuala Lumpur, Rangoon]
 
   # Ozone plots
   o3_timeseries:
@@ -169,6 +170,8 @@ plots:
     pairs: [cesm_aeronet_aod]
     title: "AOD Spatial Bias"
     show_site_labels: true
+    site_label_var: site
+    label_sites: [Singapore, Manila_Observatory, Beijing-CAMS, Chiang_Mai_Met_Sta, Seoul_SNU, XiangHe]
 
 # Statistics configuration
 stats:
