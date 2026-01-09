@@ -16,6 +16,7 @@ from davinci_monet.cli.app import (
     SUCCESS_COLOR,
     timer,
 )
+from davinci_monet.pipeline.stages import StageStatus
 
 
 def run_analysis(control_path: str, debug: bool = False) -> None:
@@ -50,7 +51,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
         from davinci_monet.pipeline.runner import PipelineRunner
         from davinci_monet.pipeline.stages import PipelineContext
 
-        context = PipelineContext(config=config)
+        context = PipelineContext(config=config.model_dump())
         runner = PipelineRunner(fail_fast=True)
 
     with timer("Opening model(s)"):
@@ -58,7 +59,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
         models_stage = LoadModelsStage()
         models_result = models_stage.execute(context)
-        if not models_result.success:
+        if not models_result.status == StageStatus.COMPLETED:
             raise RuntimeError(f"Failed to load models: {models_result.error}")
 
     with timer("Opening observation(s)"):
@@ -66,7 +67,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
         obs_stage = LoadObservationsStage()
         obs_result = obs_stage.execute(context)
-        if not obs_result.success:
+        if not obs_result.status == StageStatus.COMPLETED:
             raise RuntimeError(f"Failed to load observations: {obs_result.error}")
 
     with timer("Pairing data"):
@@ -74,7 +75,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
         pairing_stage = PairingStage()
         pairing_result = pairing_stage.execute(context)
-        if not pairing_result.success:
+        if not pairing_result.status == StageStatus.COMPLETED:
             raise RuntimeError(f"Failed to pair data: {pairing_result.error}")
 
     # Check if plotting is configured
@@ -84,7 +85,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
             plotting_stage = PlottingStage()
             plotting_result = plotting_stage.execute(context)
-            if not plotting_result.success:
+            if not plotting_result.status == StageStatus.COMPLETED:
                 typer.secho(
                     f"Warning: Some plots failed: {plotting_result.error}",
                     fg=typer.colors.YELLOW,
@@ -97,7 +98,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
             stats_stage = StatisticsStage()
             stats_result = stats_stage.execute(context)
-            if not stats_result.success:
+            if not stats_result.status == StageStatus.COMPLETED:
                 typer.secho(
                     f"Warning: Statistics computation failed: {stats_result.error}",
                     fg=typer.colors.YELLOW,
@@ -110,7 +111,7 @@ def run_analysis(control_path: str, debug: bool = False) -> None:
 
             save_stage = SaveResultsStage()
             save_result = save_stage.execute(context)
-            if not save_result.success:
+            if not save_result.status == StageStatus.COMPLETED:
                 typer.secho(
                     f"Warning: Failed to save some results: {save_result.error}",
                     fg=typer.colors.YELLOW,

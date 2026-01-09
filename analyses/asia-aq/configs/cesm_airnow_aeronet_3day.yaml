@@ -2,12 +2,12 @@
 # Comparing model output with AirNow surface observations and AERONET AOD
 #
 # Model: CESM/CAM-chem (f.e3b06m.FCnudged.t6s.01x01.01)
-# Period: February 1-10, 2024
+# Period: February 1-3, 2024 (quick test)
 # Domain: 0-45°N, 90-140°E
 
 analysis:
   start_time: "2024-02-01"
-  end_time: "2024-02-10"
+  end_time: "2024-02-03"
   output_dir: output
   debug: false
 
@@ -15,7 +15,7 @@ analysis:
 model:
   cesm_asiaq:
     mod_type: cesm_fv
-    files: /Users/fillmore/Data/ASIA-AQ/CAM/f.e3b06m.FCnudged.t6s.01x01.01.cam.h2i.2024-02-*.nc
+    files: /Users/fillmore/Data/ASIA-AQ/CAM/f.e3b06m.FCnudged.t6s.01x01.01.cam.h2i.2024-02-0[123]-*.nc
     radius_of_influence: 15000  # 15 km for 0.1 deg grid
 
     # Variable mapping: obs_label -> {model_var: obs_var}
@@ -65,7 +65,7 @@ model:
 obs:
   airnow:
     obs_type: pt_sfc
-    filename: data/airnow_asiaq_2024-02-01_2024-02-10.nc
+    filename: data/airnow_asiaq_2024-02-01_2024-02-03.nc
     variables:
       pm25:
         obs_min: 0
@@ -87,7 +87,7 @@ obs:
 
   aeronet:
     obs_type: pt_sfc
-    filename: data/AERONET_L15_20240201_20240210.nc
+    filename: data/AERONET_L15_20240201_20240203.nc
     variables:
       aod_500nm:
         obs_min: 0
@@ -123,15 +123,7 @@ plots:
   pm25_timeseries:
     type: timeseries
     pairs: [cesm_airnow_pm25]
-    title: "PM2.5 Time Series - ASIA-AQ (Mean ± Std)"
-    show_uncertainty: true
-    aggregate_dim: site
-
-  pm25_timeseries_sites:
-    type: timeseries
-    pairs: [cesm_airnow_pm25]
-    title: "PM2.5 Time Series by Site - ASIA-AQ"
-    show_individual_sites: true
+    title: "PM2.5 Time Series - ASIA-AQ"
 
   pm25_scatter:
     type: scatter
@@ -142,15 +134,12 @@ plots:
     type: spatial_bias
     pairs: [cesm_airnow_pm25]
     title: "PM2.5 Spatial Bias"
-    show_site_labels: true
 
   # Ozone plots
   o3_timeseries:
     type: timeseries
     pairs: [cesm_airnow_o3]
-    title: "O3 Time Series - ASIA-AQ (Mean ± Std)"
-    show_uncertainty: true
-    aggregate_dim: site
+    title: "O3 Time Series - ASIA-AQ"
 
   o3_scatter:
     type: scatter
@@ -167,7 +156,6 @@ plots:
     type: spatial_bias
     pairs: [cesm_aeronet_aod]
     title: "AOD Spatial Bias"
-    show_site_labels: true
 
 # Statistics configuration
 stats:

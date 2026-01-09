@@ -72,6 +72,9 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
         marker_size: float | None = None,
         symmetric_cbar: bool = True,
         show_zero_line: bool = True,
+        show_site_labels: bool = False,
+        site_label_var: str = "site_name",
+        label_fontsize: int = 8,
         **kwargs: Any,
     ) -> matplotlib.figure.Figure:
         """Generate a spatial bias plot.
@@ -196,6 +199,24 @@ class SpatialBiasPlotter(BaseSpatialPlotter):
         units = get_variable_units(paired_data, obs_var)
         label = format_label_with_units("Bias (Model - Obs)", units)
         self.add_colorbar(fig, scatter, ax, label=label)
+
+        # Add site labels if requested
+        if show_site_labels and site_label_var in paired_data.coords:
+            site_labels = paired_data[site_label_var].values
+            # Get unique site locations (after time averaging, each site has one point)
+            unique_lons, unique_idx = np.unique(lons_flat, return_index=True)
+            for i, idx in enumerate(unique_idx):
+                site_idx = idx % len(site_labels) if len(site_labels) > 0 else 0
+                if site_idx < len(site_labels):
+                    ax.annotate(
+                        str(site_labels[site_idx]),
+                        (lons_flat[idx], lats_flat[idx]),
+                        xytext=(3, 3),
+                        textcoords="offset points",
+                        fontsize=label_fontsize,
+                        alpha=0.8,
+                        transform=ccrs.PlateCarree(),
+                    )
 
         # Title
         var_label = get_variable_label(paired_data, obs_var)

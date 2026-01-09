@@ -610,9 +610,17 @@ class PlottingStage(BaseStage):
                         plotter_config["vmin"] = vmin
                         plotter_config["vmax"] = vmax
 
+                    # Extract additional plot options from plot_spec
+                    plot_options: dict[str, Any] = {}
+                    for opt_key in ["show_site_labels", "show_individual_sites",
+                                    "show_uncertainty", "uncertainty_type",
+                                    "resample", "aggregate_dim"]:
+                        if opt_key in plot_spec:
+                            plot_options[opt_key] = plot_spec[opt_key]
+
                     # Get plotter and generate plot
                     plotter = get_plotter(plot_type, config=plotter_config)
-                    fig = plotter.plot(paired_data, obs_var_name, model_var_name)
+                    fig = plotter.plot(paired_data, obs_var_name, model_var_name, **plot_options)
 
                     # Save plot
                     output_path = output_dir / f"{plot_name}.png"

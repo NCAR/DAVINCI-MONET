@@ -248,33 +248,35 @@ def _dataframe_to_xarray(df: pd.DataFrame) -> xr.Dataset:
     sites_df = df.groupby("siteid")[available_coords].first().reset_index()
     site_ids = sites_df["siteid"].tolist()
 
-    # Get unique times
-    times = pd.to_datetime(df["time"].unique()).sort_values()
-
     # Identify data columns (exclude metadata columns)
     meta_cols = ["siteid", "time", "latitude", "longitude", "elevation",
                  "day_of_year", "day_of_year(fraction)"]
     data_cols = [c for c in df.columns if c not in meta_cols]
 
-    # Create data arrays for each variable
+    # Get common time index first
+    times = pd.to_datetime(df["time"].unique()).sort_values()
+
+    # Use vectorized pivot_table for fast conversion
     data_vars = {}
     for col in data_cols:
-        # Initialize with NaN
-        data = np.full((len(times), len(site_ids)), np.nan)
+        if col not in df.columns:
+            continue
+        # Pivot: rows=time, columns=siteid, values=col
+        try:
+            pivoted = df.pivot_table(
+                index="time", columns="siteid", values=col, aggfunc="first"
+            )
+            # Reindex to ensure consistent time and site ordering
+            pivoted = pivoted.reindex(index=times, columns=site_ids)
+            # Only include if there's actual data
+            if not pivoted.isna().all().all():
+                data_vars[col] = (["time", "site"], pivoted.values)
+        except Exception:
+            # Skip columns that can't be pivoted (e.g., string columns)
+            continue
 
-        # Fill in values
-        for i, t in enumerate(times):
-            time_df = df[df["time"] == t]
-            for j, sid in enumerate(site_ids):
-                site_df = time_df[time_df["siteid"] == sid]
-                if not site_df.empty and col in site_df.columns:
-                    val = site_df[col].iloc[0]
-                    if pd.notna(val):
-                        data[i, j] = val
-
-        # Only include if there's actual data
-        if not np.all(np.isnan(data)):
-            data_vars[col] = (["time", "site"], data)
+    if not data_vars:
+        raise DataFormatError("No numeric data columns found in DataFrame")
 
     # Create coordinates
     coords = {

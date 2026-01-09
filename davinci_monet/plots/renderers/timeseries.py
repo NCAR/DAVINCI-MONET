@@ -65,6 +65,9 @@ class TimeSeriesPlotter(BasePlotter):
         aggregate_dim: str | None = None,
         obs_label: str | None = None,
         model_label: str | None = None,
+        show_individual_sites: bool = False,
+        site_dim: str = "site",
+        site_label_var: str = "site_name",
         **kwargs: Any,
     ) -> matplotlib.figure.Figure:
         """Generate a time series plot.
@@ -110,6 +113,13 @@ class TimeSeriesPlotter(BasePlotter):
         # Get data arrays
         obs_data = paired_data[obs_var]
         model_data = paired_data[model_var]
+
+        # Plot individual sites if requested
+        if show_individual_sites and site_dim in obs_data.dims:
+            return self._plot_individual_sites(
+                fig, ax, paired_data, obs_var, model_var,
+                time_dim, site_dim, site_label_var, resample, **kwargs
+            )
 
         # Aggregate over non-time dimensions if specified
         if aggregate_dim is not None and aggregate_dim in obs_data.dims:
@@ -205,6 +215,122 @@ class TimeSeriesPlotter(BasePlotter):
         ax.tick_params(axis="x", rotation=45)
 
         # Grid
+        ax.grid(True, alpha=0.3)
+
+        return fig
+
+    def _plot_individual_sites(
+        self,
+        fig: matplotlib.figure.Figure,
+        ax: matplotlib.axes.Axes,
+        paired_data: xr.Dataset,
+        obs_var: str,
+        model_var: str,
+        time_dim: str,
+        site_dim: str,
+        site_label_var: str,
+        resample: str | None,
+        **kwargs: Any,
+    ) -> matplotlib.figure.Figure:
+        """Plot individual site time series.
+
+        Parameters
+        ----------
+        fig
+            Figure object.
+        ax
+            Axes to plot on.
+        paired_data
+            Paired dataset.
+        obs_var, model_var
+            Variable names.
+        time_dim
+            Time dimension name.
+        site_dim
+            Site dimension name.
+        site_label_var
+            Variable containing site labels.
+        resample
+            Resampling frequency.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The generated figure.
+        """
+        import matplotlib.cm as cm
+
+        obs_data = paired_data[obs_var]
+        model_data = paired_data[model_var]
+        time_values = pd.to_datetime(paired_data[time_dim].values)
+
+        # Get site labels
+        if site_label_var in paired_data.coords:
+            site_labels = paired_data[site_label_var].values
+        else:
+            site_labels = [f"Site {i}" for i in range(paired_data.sizes[site_dim])]
+
+        n_sites = paired_data.sizes[site_dim]
+
+        # Use a colormap for different sites
+        colors = cm.tab20(np.linspace(0, 1, min(n_sites, 20)))
+
+        # Plot each site
+        for i in range(n_sites):
+            site_obs = obs_data.isel({site_dim: i})
+            site_model = model_data.isel({site_dim: i})
+
+            # Skip if all NaN
+            if site_obs.isnull().all() and site_model.isnull().all():
+                continue
+
+            color = colors[i % len(colors)]
+            label = str(site_labels[i]) if i < len(site_labels) else f"Site {i}"
+
+            # Plot observations as solid lines
+            ax.plot(
+                time_values,
+                site_obs.values,
+                color=color,
+                linestyle="-",
+                marker="o",
+                markersize=4,
+                linewidth=1,
+                alpha=0.7,
+                label=f"{label} (obs)",
+            )
+
+            # Plot model as dashed lines
+            ax.plot(
+                time_values,
+                site_model.values,
+                color=color,
+                linestyle="--",
+                marker="s",
+                markersize=4,
+                linewidth=1,
+                alpha=0.7,
+                label=f"{label} (model)",
+            )
+
+        # Formatting
+        self.apply_text_style(ax)
+
+        units = get_variable_units(paired_data, obs_var)
+        ylabel = format_label_with_units(
+            self.config.ylabel or get_variable_label(paired_data, obs_var),
+            units,
+        )
+        self.set_labels(ax, xlabel="Time", ylabel=ylabel)
+
+        # Legend - put outside plot if many sites
+        if n_sites > 5:
+            ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=7)
+            fig.tight_layout()
+        else:
+            ax.legend(fontsize=8)
+
+        ax.tick_params(axis="x", rotation=45)
         ax.grid(True, alpha=0.3)
 
         return fig

@@ -190,53 +190,41 @@ class PointStrategy(BasePairingStrategy):
         # Create site coordinate
         site_coord = np.arange(n_sites)
 
-        # Extract values for each variable
-        data_vars: dict[str, tuple[tuple[str, ...], np.ndarray[Any, np.dtype[Any]]]] = {}
+        # Handle invalid indices (outside radius of influence)
+        valid_mask = (lat_idx >= 0) & (lon_idx >= 0)
 
-        for var in model.data_vars:
-            var_data = model[var]
+        # Create DataArray indexers for vectorized extraction
+        lat_indexer = xr.DataArray(
+            np.where(valid_mask, lat_idx, 0),  # Use 0 for invalid, mask later
+            dims=[site_dim]
+        )
+        lon_indexer = xr.DataArray(
+            np.where(valid_mask, lon_idx, 0),
+            dims=[site_dim]
+        )
 
-            # Determine output dimensions
-            out_dims: list[str] = []
-            for dim in var_data.dims:
-                if dim not in (lat_dim, lon_dim):
-                    out_dims.append(str(dim))
-            out_dims.append(site_dim)
+        # Extract all sites at once using advanced indexing
+        extracted = model.isel({lat_dim: lat_indexer, lon_dim: lon_indexer})
 
-            # Build output shape
-            out_shape: list[int] = []
-            for dim in out_dims[:-1]:
-                out_shape.append(int(var_data.sizes[dim]))
-            out_shape.append(n_sites)
+        # Load data to numpy (triggers single read instead of per-site reads)
+        extracted = extracted.load()
 
-            # Extract values
-            out_data = np.full(out_shape, np.nan)
+        # Mask invalid sites with NaN
+        if not valid_mask.all():
+            for var in extracted.data_vars:
+                extracted[var] = extracted[var].where(
+                    xr.DataArray(valid_mask, dims=[site_dim])
+                )
 
-            for i in range(n_sites):
-                if lat_idx[i] < 0 or lon_idx[i] < 0:
-                    # Outside radius of influence
-                    continue
-
-                if model_lat.ndim == 1:
-                    # Regular grid
-                    selection = {lat_dim: lat_idx[i], lon_dim: lon_idx[i]}
-                else:
-                    # Curvilinear grid
-                    selection = {lat_dim: lat_idx[i], lon_dim: lon_idx[i]}
-
-                site_vals = var_data.isel(selection).values
-                out_data[..., i] = site_vals
-
-            data_vars[str(var)] = (tuple(out_dims), out_data)
-
-        # Build output dataset
+        # Build output dataset with proper coordinates
         coords = {site_dim: site_coord}
-
-        # Add time coordinate if present
         if "time" in model.coords:
             coords["time"] = model.coords["time"].values
 
-        return xr.Dataset(data_vars, coords=coords)
+        return xr.Dataset(
+            {str(var): extracted[var] for var in extracted.data_vars},
+            coords=coords
+        )
 
     def _create_paired_output(
         self,

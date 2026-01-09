@@ -42,7 +42,7 @@ BBOX = {
 
 # Date range
 START_DATE = "2024-02-01"
-END_DATE = "2024-02-03"
+END_DATE = "2024-02-10"
 
 
 def download_airnow():
@@ -107,6 +107,10 @@ def dataframe_to_dataset(df: pd.DataFrame) -> xr.Dataset:
     data_vars = ["OZONE", "PM2.5", "PM10", "NO2", "CO", "SO2"]
     available_vars = [v for v in data_vars if v in df.columns]
 
+    # Round times to nearest hour to avoid single-site outlier times
+    df = df.copy()
+    df["time"] = pd.to_datetime(df["time"]).dt.round("h")
+
     # Get unique sites
     sites = df.groupby("siteid").first()[["site", "latitude", "longitude"]].reset_index()
     site_ids = sites["siteid"].tolist()
@@ -114,20 +118,16 @@ def dataframe_to_dataset(df: pd.DataFrame) -> xr.Dataset:
     # Create time index
     times = pd.to_datetime(df["time"].unique()).sort_values()
 
-    # Initialize data arrays
+    # Use vectorized pivot_table for fast conversion
     data_dict = {}
     for var in available_vars:
-        data_dict[var.lower().replace(".", "")] = np.full((len(times), len(site_ids)), np.nan)
-
-    # Fill data arrays
-    for i, t in enumerate(times):
-        time_df = df[df["time"] == t]
-        for j, sid in enumerate(site_ids):
-            site_df = time_df[time_df["siteid"] == sid]
-            if not site_df.empty:
-                for var in available_vars:
-                    if var in site_df.columns and site_df[var].notna().any():
-                        data_dict[var.lower().replace(".", "")][i, j] = site_df[var].iloc[0]
+        var_name = var.lower().replace(".", "")
+        pivoted = df.pivot_table(
+            index="time", columns="siteid", values=var, aggfunc="first"
+        )
+        # Reindex to ensure consistent site ordering
+        pivoted = pivoted.reindex(columns=site_ids)
+        data_dict[var_name] = pivoted.values
 
     # Create dataset
     ds = xr.Dataset(
