@@ -127,12 +127,6 @@ plots:
     show_uncertainty: true
     aggregate_dim: site
 
-  pm25_timeseries_sites:
-    type: timeseries
-    pairs: [cesm_airnow_pm25]
-    title: "PM2.5 Time Series by Site - ASIA-AQ"
-    show_individual_sites: true
-
   pm25_scatter:
     type: scatter
     pairs: [cesm_airnow_pm25]
@@ -158,6 +152,13 @@ plots:
     title: "O3 Model vs Observations"
 
   # AOD plots
+  aod_timeseries:
+    type: timeseries
+    pairs: [cesm_aeronet_aod]
+    title: "AOD Time Series - ASIA-AQ (Mean ± Std)"
+    show_uncertainty: true
+    aggregate_dim: site
+
   aod_scatter:
     type: scatter
     pairs: [cesm_aeronet_aod]
