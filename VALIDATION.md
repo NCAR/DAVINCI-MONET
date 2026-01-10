@@ -6,11 +6,11 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 
 | Category | Reader | Status | Validated By | Date | Notes |
 |----------|--------|--------|--------------|------|-------|
-| **Surface** | AirNow | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (36 sites, Feb 2024) |
+| **Surface** | AirNow | Complete | D. Fillmore | 2026-01 | ASIA-AQ analysis (36 sites, Feb 2024) |
 | | AQS | Not Started | | | |
-| | AERONET | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (68 sites, Feb 2024) |
+| | AERONET | Complete | D. Fillmore | 2026-01 | ASIA-AQ analysis (68 sites, Feb 2024) |
 | | OpenAQ | Not Started | | | |
-| **Column** | Pandora | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (13 sites, Feb 2024) |
+| **Column** | Pandora | Complete | D. Fillmore | 2026-01 | ASIA-AQ analysis (13 sites, Feb 2024) |
 | **Sonde** | Ozonesonde | Not Started | | | |
 | **Aircraft** | ICARTT | Not Started | | | |
 | **Satellite L2** | TROPOMI | Not Started | | | Polar; NO2, O3, CO, HCHO |
@@ -43,12 +43,12 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 
 | Model | Reader | Status | Validated By | Date | Notes |
 |-------|--------|--------|--------------|------|-------|
-| CESM/CAM-chem | cesm_fv | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (0.1° FV grid, Feb 2024) |
+| CESM/CAM-chem | cesm_fv | Complete | D. Fillmore | 2026-01 | ASIA-AQ analysis (0.1° FV grid, Feb 2024) |
 | CESM (SE grid) | cesm_se | Not Started | | | |
 | WRF-Chem | wrfchem | Not Started | | | |
 | CMAQ | cmaq | Not Started | | | |
 | UFS-AQM | ufs | Not Started | | | |
-| Generic NetCDF | generic | Complete | D. Fillmore | 2025-01 | Used for precomputed NO2 column |
+| Generic NetCDF | generic | Complete | D. Fillmore | 2026-01 | Used for precomputed NO2 column |
 
 ### Model Acronyms
 
@@ -274,7 +274,7 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 
 ## Validation Notes
 
-### ASIA-AQ Analysis (January 2025)
+### ASIA-AQ Analysis (January 2026)
 
 **Analysis Period:** February 1-29, 2024 (full month, leap year)
 **Domain:** 0-45°N, 90-140°E (East and Southeast Asia)
