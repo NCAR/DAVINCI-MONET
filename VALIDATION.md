@@ -2,14 +2,15 @@
 
 This document tracks the human validation of DAVINCI-MONET using real observational datasets. Model data is internal to our institutions; observational data sources are documented below.
 
-## Validation Status
+## Observation Validation Status
 
 | Category | Reader | Status | Validated By | Date | Notes |
 |----------|--------|--------|--------------|------|-------|
-| **Surface** | AirNow | Not Started | | | |
+| **Surface** | AirNow | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (36 sites, Feb 2024) |
 | | AQS | Not Started | | | |
-| | AERONET | Not Started | | | |
+| | AERONET | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (68 sites, Feb 2024) |
 | | OpenAQ | Not Started | | | |
+| **Column** | Pandora | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (13 sites, Feb 2024) |
 | **Sonde** | Ozonesonde | Not Started | | | |
 | **Aircraft** | ICARTT | Not Started | | | |
 | **Satellite L2** | TROPOMI | Not Started | | | |
@@ -18,6 +19,17 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 | **Satellite L3** | MOPITT | Not Started | | | |
 | | OMPS | Not Started | | | |
 | | GOES | Not Started | | | |
+
+## Model Validation Status
+
+| Model | Reader | Status | Validated By | Date | Notes |
+|-------|--------|--------|--------------|------|-------|
+| CESM/CAM-chem | cesm_fv | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (0.1° FV grid, Feb 2024) |
+| CESM (SE grid) | cesm_se | Not Started | | | |
+| WRF-Chem | wrfchem | Not Started | | | |
+| CMAQ | cmaq | Not Started | | | |
+| UFS-AQM | ufs | Not Started | | | |
+| Generic NetCDF | generic | Complete | D. Fillmore | 2025-01 | Used for precomputed NO2 column |
 
 **Status Key:**
 - Not Started
@@ -62,6 +74,18 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 - **Data Portal:** [OpenAQ Explorer](https://explore.openaq.org/)
 - **API:** [OpenAQ API v3](https://docs.openaq.org/)
 - **Notes:** Aggregates data from government and research sources worldwide; API key required
+
+---
+
+### Column Observations
+
+#### Pandora (Ground-Based Spectrometers)
+- **Variables:** Tropospheric NO2 column, total O3 column, HCHO
+- **Coverage:** Global network (150+ instruments)
+- **Temporal:** ~1-2 minute intervals during daylight
+- **Data Portal:** [Pandora Global Network](https://data.pandonia-global-network.org/)
+- **Product Info:** [PGN Data Products](https://www.pandonia-global-network.org/home/documents/products/)
+- **Notes:** L2 files contain quality flags (0=high, 1=medium, 2=low); use quality_flag ≤ 1 for research
 
 ---
 
@@ -215,6 +239,72 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 
 ---
 
+## Validation Notes
+
+### ASIA-AQ Analysis (January 2025)
+
+**Analysis Period:** February 1-29, 2024 (full month, leap year)
+**Domain:** 0-45°N, 90-140°E (East and Southeast Asia)
+**Model:** CESM/CAM-chem at 0.1° resolution (f.e3b06m.FCnudged.t6s.01x01.01)
+
+#### Observations Validated
+
+**AirNow (Surface)**
+- 36 sites in Asia (US Embassy/Consulate monitors)
+- Variables: PM2.5 (1,008 pairs), O3 (152), NO2 (54), CO (133)
+- Reader: `davinci_monet.observations.surface.airnow`
+- Download: monetio integration works correctly
+- Pairing: Point-to-grid strategy successful
+- Issues: None
+
+**AERONET (Surface AOD)**
+- 68 sites in domain
+- Variables: AOD at 500nm (8,150 pairs)
+- Reader: `davinci_monet.observations.surface.aeronet`
+- Download: monetio integration, latlonbox order is [lat_min, lon_min, lat_max, lon_max]
+- Product: Level 1.5 (near real-time)
+- Issues: None
+
+**Pandora (Column NO2)**
+- 13 sites in domain (Korea, Thailand, Laos, Malaysia, Singapore, Palau)
+- Variables: Tropospheric NO2 column (8,886 pairs)
+- Reader: `davinci_monet.observations.surface.pandora`
+- L2 file parsing with quality filtering (flags 0-1 accepted)
+- Solar zenith angle filtering (< 80°)
+- Issues: None; reader handles varied L2 file formats correctly
+
+#### Model Validated
+
+**CESM/CAM-chem (cesm_fv reader)**
+- 0.1° finite volume grid
+- Hourly output (696 files for Feb 2024)
+- Variables tested: PM25, O3, NO2, CO, AODVISdn
+- Unit conversions verified: mol/mol → ppb (×1e9), kg/kg → μg/m³ (×1.2e9)
+- Vertical coordinate handling: hybrid sigma-pressure, surface at lev index 0 after processing
+- NO2 column integration: `compute_tropospheric_column()` function validated against Pandora
+
+#### Statistics Summary
+
+| Variable | N | R | NMB |
+|----------|---|---|-----|
+| PM2.5 | 1,008 | 0.21 | +29% |
+| O3 | 152 | 0.48 | -45% |
+| NO2 (sfc) | 54 | 0.43 | +150% |
+| CO | 133 | 0.07 | -27% |
+| AOD | 8,150 | 0.51 | -46% |
+| NO2 column | 8,886 | 0.57 | +86% |
+
+#### Pipeline Components Validated
+
+- `load_models` stage: CESM reader, unit scaling
+- `load_observations` stage: AirNow, AERONET, Pandora readers
+- `pairing` stage: Point-to-grid strategy
+- `statistics` stage: All standard metrics (N, MB, RMSE, R, NMB, NME, IOA)
+- `plotting` stage: scatter, timeseries, spatial_bias, site_timeseries
+- `save_results` stage: CSV output
+
+---
+
 ## References
 
 - EPA Air Quality Data: https://www.epa.gov/outdoor-air-quality-data
@@ -222,3 +312,4 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 - Copernicus Data Space: https://dataspace.copernicus.eu/
 - WOUDC: https://woudc.org/
 - NOAA GML: https://gml.noaa.gov/
+- Pandora Global Network: https://www.pandonia-global-network.org/
