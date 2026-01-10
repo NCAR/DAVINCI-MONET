@@ -6,7 +6,7 @@ AirNow provides data from US Embassy/Consulate air quality monitors
 in Asian cities. No API key required for this access method.
 
 Domain: 0-45°N, 90-140°E
-Period: February 1-3, 2024
+Period: February 1-28, 2024
 
 Coverage includes:
 - Beijing, Guangzhou, Shenyang (China)
@@ -42,7 +42,7 @@ BBOX = {
 
 # Date range
 START_DATE = "2024-02-01"
-END_DATE = "2024-02-10"
+END_DATE = "2024-02-28"
 
 
 def download_airnow():
