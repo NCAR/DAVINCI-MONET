@@ -13,12 +13,31 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 | **Column** | Pandora | Complete | D. Fillmore | 2025-01 | ASIA-AQ analysis (13 sites, Feb 2024) |
 | **Sonde** | Ozonesonde | Not Started | | | |
 | **Aircraft** | ICARTT | Not Started | | | |
-| **Satellite L2** | TROPOMI | Not Started | | | |
-| | TEMPO | Not Started | | | |
-| | MODIS | Not Started | | | |
-| **Satellite L3** | MOPITT | Not Started | | | |
-| | OMPS | Not Started | | | |
-| | GOES | Not Started | | | |
+| **Satellite L2** | TROPOMI | Not Started | | | Polar; NO2, O3, CO, HCHO |
+| | MODIS | Not Started | | | Polar; AOD |
+| | TEMPO | Not Started | | | Geo; NO2, O3, HCHO |
+| **Satellite L3** | MOPITT | Not Started | | | Polar; CO |
+| | OMPS | Not Started | | | Polar; O3 |
+| | GOES | Not Started | | | Geo; AOD |
+
+### Observation Acronyms
+
+| Acronym | Full Name |
+|---------|-----------|
+| AirNow | EPA Real-Time Air Quality Index |
+| AQS | EPA Air Quality System |
+| AERONET | Aerosol Robotic Network |
+| OpenAQ | Open Air Quality (global platform) |
+| Pandora | Pandora Global Network (ground-based spectrometers) |
+| ICARTT | International Consortium for Atmospheric Research on Transport and Transformation |
+| TROPOMI | TROPOspheric Monitoring Instrument (Sentinel-5P) |
+| MODIS | Moderate Resolution Imaging Spectroradiometer (Terra/Aqua) |
+| TEMPO | Tropospheric Emissions: Monitoring of Pollution |
+| MOPITT | Measurements of Pollution in the Troposphere (Terra) |
+| OMPS | Ozone Mapping and Profiler Suite (Suomi-NPP) |
+| GOES | Geostationary Operational Environmental Satellite |
+
+---
 
 ## Model Validation Status
 
@@ -30,6 +49,20 @@ This document tracks the human validation of DAVINCI-MONET using real observatio
 | CMAQ | cmaq | Not Started | | | |
 | UFS-AQM | ufs | Not Started | | | |
 | Generic NetCDF | generic | Complete | D. Fillmore | 2025-01 | Used for precomputed NO2 column |
+
+### Model Acronyms
+
+| Acronym | Full Name |
+|---------|-----------|
+| CESM | Community Earth System Model |
+| CAM-chem | Community Atmosphere Model with Chemistry |
+| FV | Finite Volume (dynamical core) |
+| SE | Spectral Element (dynamical core) |
+| WRF-Chem | Weather Research and Forecasting model with Chemistry |
+| CMAQ | Community Multiscale Air Quality model |
+| UFS-AQM | Unified Forecast System - Air Quality Model |
+
+---
 
 **Status Key:**
 - Not Started
