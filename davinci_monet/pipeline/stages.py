@@ -241,14 +241,17 @@ class LoadModelsStage(BaseStage):
                     label=label,
                 )
 
-                # Apply unit scaling if configured
+                # Apply unit scaling and units if configured
                 if isinstance(variables, dict):
                     for var_name, var_config in variables.items():
-                        if isinstance(var_config, dict) and "unit_scale" in var_config:
-                            scale = var_config["unit_scale"]
-                            method = var_config.get("unit_scale_method", "*")
-                            if var_name in model_data.data.data_vars:
-                                model_data.apply_unit_scale(var_name, scale, method)
+                        if isinstance(var_config, dict):
+                            if "unit_scale" in var_config:
+                                scale = var_config["unit_scale"]
+                                method = var_config.get("unit_scale_method", "*")
+                                if var_name in model_data.data.data_vars:
+                                    model_data.apply_unit_scale(var_name, scale, method)
+                            if "units" in var_config and var_name in model_data.data.data_vars:
+                                model_data.data[var_name].attrs["units"] = var_config["units"]
 
                 context.models[label] = model_data
                 loaded_count += 1
@@ -330,14 +333,17 @@ class LoadObservationsStage(BaseStage):
                     variables=variables,
                 )
 
-                # Apply unit scaling if configured
+                # Apply unit scaling and units if configured
                 if isinstance(variables, dict):
                     for var_name, var_config in variables.items():
-                        if isinstance(var_config, dict) and "unit_scale" in var_config:
-                            scale = var_config["unit_scale"]
-                            method = var_config.get("unit_scale_method", "*")
-                            if var_name in obs_data.data.data_vars:
-                                obs_data.apply_unit_scale(var_name, scale, method)
+                        if isinstance(var_config, dict):
+                            if "unit_scale" in var_config:
+                                scale = var_config["unit_scale"]
+                                method = var_config.get("unit_scale_method", "*")
+                                if var_name in obs_data.data.data_vars:
+                                    obs_data.apply_unit_scale(var_name, scale, method)
+                            if "units" in var_config and var_name in obs_data.data.data_vars:
+                                obs_data.data[var_name].attrs["units"] = var_config["units"]
 
                 context.observations[label] = obs_data
                 loaded_count += 1

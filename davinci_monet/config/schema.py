@@ -125,6 +125,8 @@ class VariableConfig(FlexibleModel):
         Value to treat as NaN.
     rename
         Rename variable to this name.
+    units
+        Unit string for variable (e.g., 'ppb', 'μg/m³').
     ylabel_plot
         Y-axis label for plots.
     ty_scale
@@ -151,6 +153,7 @@ class VariableConfig(FlexibleModel):
     obs_max: float | None = None
     nan_value: float | None = None
     rename: str | None = None
+    units: str | None = None
     ylabel_plot: str | None = None
     ty_scale: float | None = None
     vmin_plot: float | None = None
