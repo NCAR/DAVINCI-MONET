@@ -113,6 +113,16 @@ python examples/aircraft_evaluation.py
 
 Output is saved to `examples/output/<name>/` as both PNG (300 DPI) and PDF.
 
+## Analyses
+
+The `analyses/` directory contains real-world model evaluation studies:
+
+| Analysis | Model | Observations | Period | Description |
+|----------|-------|--------------|--------|-------------|
+| [`ASIA-AQ`](analyses/asia-aq/) | CESM/CAM-chem | AirNow, AERONET, Pandora | Feb 2024 | NASA ASIA-AQ campaign evaluation |
+
+See the [ASIA-AQ Analysis](../../wiki/ASIA-AQ-Analysis) wiki page for detailed documentation.
+
 ## Documentation
 
 See the [Wiki](../../wiki) for full documentation:
