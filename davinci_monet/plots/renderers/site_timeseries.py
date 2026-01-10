@@ -223,13 +223,14 @@ class SiteTimeSeriesPlotter(BasePlotter):
             if idx == 0:
                 ax.legend(loc="upper left", fontsize=8)
 
-            # Y-axis label on left column
+            # Y-axis label on left column - use base variable name
             if idx % ncols == 0:
                 units = get_variable_units(paired_data, obs_var)
-                ylabel = get_variable_label(paired_data, obs_var)
+                base_var_name = obs_var.replace("obs_", "").replace("model_", "")
+                ylabel = get_variable_label(paired_data, obs_var, base_var_name)
                 if scale_factor != 1.0:
                     exp = int(np.log10(1 / scale_factor))
-                    ylabel = f"{ylabel}\n(×10{_superscript(exp)} {units})"
+                    ylabel = f"{ylabel}\n(×10{_superscript(exp)} {units})" if units and units != "1" else f"{ylabel}\n(×10{_superscript(exp)})"
                 else:
                     ylabel = format_label_with_units(ylabel, units)
                 ax.set_ylabel(ylabel, fontsize=9)

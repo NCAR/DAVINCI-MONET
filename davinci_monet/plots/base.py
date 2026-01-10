@@ -562,14 +562,14 @@ def format_label_with_units(label: str, units: str | None) -> str:
     label
         Base label.
     units
-        Units string (can be None).
+        Units string (can be None). Dimensionless units ("1") are omitted.
 
     Returns
     -------
     str
         Formatted label with units in parentheses if provided.
     """
-    if units:
+    if units and units != "1":
         return f"{label} ({units})"
     return label
 

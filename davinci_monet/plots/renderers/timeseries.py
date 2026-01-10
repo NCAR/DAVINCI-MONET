@@ -202,10 +202,11 @@ class TimeSeriesPlotter(BasePlotter):
         # Formatting
         self.apply_text_style(ax)
 
-        # Set labels
+        # Set labels - use base variable name (strip obs_/model_ prefix)
         units = get_variable_units(paired_data, obs_var)
+        base_var_name = obs_var.replace("obs_", "").replace("model_", "")
         ylabel = format_label_with_units(
-            self.config.ylabel or get_variable_label(paired_data, obs_var),
+            self.config.ylabel or get_variable_label(paired_data, obs_var, base_var_name),
             units,
         )
         self.set_labels(ax, xlabel="Time", ylabel=ylabel)
@@ -324,9 +325,11 @@ class TimeSeriesPlotter(BasePlotter):
         # Formatting
         self.apply_text_style(ax)
 
+        # Set labels - use base variable name (strip obs_/model_ prefix)
         units = get_variable_units(paired_data, obs_var)
+        base_var_name = obs_var.replace("obs_", "").replace("model_", "")
         ylabel = format_label_with_units(
-            self.config.ylabel or get_variable_label(paired_data, obs_var),
+            self.config.ylabel or get_variable_label(paired_data, obs_var, base_var_name),
             units,
         )
         self.set_labels(ax, xlabel="Time", ylabel=ylabel)
