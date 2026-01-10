@@ -21,14 +21,48 @@ A modern, type-safe Python toolkit for evaluating atmospheric chemistry and air 
 | | AQS | EPA Air Quality System | O3, PM2.5, NO2, SO2, CO |
 | | AERONET | Aerosol Robotic Network | AOD, Angstrom exponent |
 | | OpenAQ | Global air quality platform | O3, PM2.5, NO2, SO2, CO |
+| **Column** | Pandora | Ground-based spectrometers | Tropospheric NO2 column |
 | **Sonde** | Ozonesonde | Balloon profiles | O3 vertical profiles |
 | **Aircraft** | ICARTT | NASA/NOAA flight campaigns | Multiple trace gases |
-| **Satellite L2** | TROPOMI | Sentinel-5P, daily global | NO2, O3, CO, HCHO, SO2 |
-| | TEMPO | Geostationary, hourly N. America | NO2 |
-| | MODIS | Terra/Aqua, daily global | AOD |
-| **Satellite L3** | MOPITT | Terra, daily global | CO |
-| | OMPS | Suomi-NPP, daily global | Total O3 |
-| | GOES | GOES-R/S, 5-min N. America | AOD |
+| **Satellite L2** | TROPOMI | Polar; Sentinel-5P | NO2, O3, CO, HCHO, SO2 |
+| | MODIS | Polar; Terra/Aqua | AOD |
+| | TEMPO | Geo; hourly N. America | NO2, O3, HCHO |
+| **Satellite L3** | MOPITT | Polar; Terra | CO |
+| | OMPS | Polar; Suomi-NPP | Total O3 |
+| | GOES | Geo; GOES-R/S | AOD |
+
+<details>
+<summary><strong>Observation Acronyms</strong></summary>
+
+| Acronym | Full Name |
+|---------|-----------|
+| AirNow | EPA Real-Time Air Quality Index |
+| AQS | EPA Air Quality System |
+| AERONET | Aerosol Robotic Network |
+| OpenAQ | Open Air Quality (global platform) |
+| Pandora | Pandora Global Network (ground-based spectrometers) |
+| ICARTT | International Consortium for Atmospheric Research on Transport and Transformation |
+| TROPOMI | TROPOspheric Monitoring Instrument (Sentinel-5P) |
+| MODIS | Moderate Resolution Imaging Spectroradiometer (Terra/Aqua) |
+| TEMPO | Tropospheric Emissions: Monitoring of Pollution |
+| MOPITT | Measurements of Pollution in the Troposphere (Terra) |
+| OMPS | Ozone Mapping and Profiler Suite (Suomi-NPP) |
+| GOES | Geostationary Operational Environmental Satellite |
+
+</details>
+
+<details>
+<summary><strong>Model Acronyms</strong></summary>
+
+| Acronym | Full Name |
+|---------|-----------|
+| CESM | Community Earth System Model |
+| CAM-chem | Community Atmosphere Model with Chemistry |
+| WRF-Chem | Weather Research and Forecasting model with Chemistry |
+| CMAQ | Community Multiscale Air Quality model |
+| UFS-AQM | Unified Forecast System - Air Quality Model |
+
+</details>
 
 ## Quick Start
 
