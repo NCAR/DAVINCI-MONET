@@ -550,6 +550,7 @@ class PlottingStage(BaseStage):
         import matplotlib.pyplot as plt
 
         from davinci_monet.plots import get_plotter
+        from davinci_monet.plots.base import format_plot_title
 
         start = time.time()
         plots_generated: list[str] = []
@@ -577,7 +578,7 @@ class PlottingStage(BaseStage):
             try:
                 plot_type = plot_spec.get("type", "scatter")
                 plot_pairs = plot_spec.get("pairs", [])
-                title = plot_spec.get("title", plot_name)
+                title = format_plot_title(plot_spec.get("title", plot_name))
 
                 for pair_name in plot_pairs:
                     # Get pair configuration

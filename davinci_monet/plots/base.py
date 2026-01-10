@@ -536,6 +536,57 @@ VARIABLE_DISPLAY_NAMES: dict[str, str] = {
     "NO2_column": "NO₂ Column",
 }
 
+# Patterns for title formatting (case-insensitive replacements)
+# Order matters - longer patterns first to avoid partial matches
+TITLE_FORMULA_REPLACEMENTS: list[tuple[str, str]] = [
+    # Longer patterns first
+    ("PM2.5", "PM₂.₅"),
+    ("PM25", "PM₂.₅"),
+    ("PM10", "PM₁₀"),
+    ("N2O5", "N₂O₅"),
+    ("HNO3", "HNO₃"),
+    ("N2O", "N₂O"),
+    ("NO2", "NO₂"),
+    ("SO2", "SO₂"),
+    ("CO2", "CO₂"),
+    ("NH3", "NH₃"),
+    ("CH4", "CH₄"),
+    ("NOx", "NOₓ"),
+    ("NOX", "NOₓ"),
+    ("O3", "O₃"),
+]
+
+
+def format_plot_title(title: str) -> str:
+    """Format a plot title with proper chemical formula subscripts.
+
+    Replaces common chemical formulas (NO2, O3, PM2.5, etc.) with
+    Unicode subscript versions for better display.
+
+    Parameters
+    ----------
+    title
+        Raw title string.
+
+    Returns
+    -------
+    str
+        Title with chemical formulas properly formatted.
+
+    Examples
+    --------
+    >>> format_plot_title("PM2.5 Model vs Observations")
+    'PM₂.₅ Model vs Observations'
+    >>> format_plot_title("NO2 Time Series")
+    'NO₂ Time Series'
+    """
+    result = title
+    for pattern, replacement in TITLE_FORMULA_REPLACEMENTS:
+        # Case-insensitive replacement while preserving surrounding text
+        import re
+        result = re.sub(re.escape(pattern), replacement, result, flags=re.IGNORECASE)
+    return result
+
 
 def format_variable_display_name(var_name: str, include_prefix: bool = True) -> str:
     """Format a variable name for display.

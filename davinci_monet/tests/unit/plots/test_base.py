@@ -6,6 +6,8 @@ import numpy as np
 
 from davinci_monet.plots.base import (
     VARIABLE_DISPLAY_NAMES,
+    TITLE_FORMULA_REPLACEMENTS,
+    format_plot_title,
     format_variable_display_name,
     format_label_with_units,
     get_variable_label,
@@ -39,6 +41,48 @@ class TestVariableDisplayNames:
         assert "pm25" in VARIABLE_DISPLAY_NAMES
         assert "PM25" in VARIABLE_DISPLAY_NAMES
         assert VARIABLE_DISPLAY_NAMES["pm25"] == VARIABLE_DISPLAY_NAMES["PM25"]
+
+
+class TestFormatPlotTitle:
+    """Tests for format_plot_title function."""
+
+    def test_pm25_formatting(self):
+        """PM2.5 should be formatted with subscripts."""
+        assert format_plot_title("PM2.5 Model vs Observations") == "PM₂.₅ Model vs Observations"
+        assert format_plot_title("PM25 Time Series") == "PM₂.₅ Time Series"
+
+    def test_no2_formatting(self):
+        """NO2 should be formatted with subscript."""
+        assert format_plot_title("NO2 Model vs Observations") == "NO₂ Model vs Observations"
+        assert format_plot_title("NO2 Spatial Bias") == "NO₂ Spatial Bias"
+
+    def test_o3_formatting(self):
+        """O3 should be formatted with subscript."""
+        assert format_plot_title("O3 Time Series") == "O₃ Time Series"
+
+    def test_so2_formatting(self):
+        """SO2 should be formatted with subscript."""
+        assert format_plot_title("SO2 Emissions") == "SO₂ Emissions"
+
+    def test_case_insensitive(self):
+        """Replacements should be case-insensitive."""
+        assert format_plot_title("no2 analysis") == "NO₂ analysis"
+        assert format_plot_title("o3 profile") == "O₃ profile"
+
+    def test_multiple_formulas(self):
+        """Multiple formulas in one title should all be formatted."""
+        assert format_plot_title("NO2 and O3 Comparison") == "NO₂ and O₃ Comparison"
+
+    def test_no_changes_needed(self):
+        """Titles without chemical formulas should be unchanged."""
+        assert format_plot_title("Temperature Profile") == "Temperature Profile"
+        assert format_plot_title("Wind Speed") == "Wind Speed"
+
+    def test_preserves_other_text(self):
+        """Other text in title should be preserved."""
+        title = "PM2.5 Time Series - ASIA-AQ (Mean ± Std)"
+        expected = "PM₂.₅ Time Series - ASIA-AQ (Mean ± Std)"
+        assert format_plot_title(title) == expected
 
 
 class TestFormatVariableDisplayName:
