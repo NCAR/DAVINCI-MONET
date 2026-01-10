@@ -494,15 +494,105 @@ def merge_config_dicts(
     return {**defaults, **overrides}
 
 
+# Lookup table for common atmospheric variable display names
+# Maps lowercase variable names (or patterns) to display names with proper formatting
+VARIABLE_DISPLAY_NAMES: dict[str, str] = {
+    # Surface pollutants
+    "pm25": "PM₂.₅",
+    "pm2.5": "PM₂.₅",
+    "pm10": "PM₁₀",
+    "o3": "O₃",
+    "ozone": "O₃",
+    "no2": "NO₂",
+    "no": "NO",
+    "nox": "NOₓ",
+    "co": "CO",
+    "co2": "CO₂",
+    "so2": "SO₂",
+    "hcho": "HCHO",
+    "nh3": "NH₃",
+    "hno3": "HNO₃",
+    "n2o": "N₂O",
+    "n2o5": "N₂O₅",
+    "ch4": "CH₄",
+    # AOD variables
+    "aod": "AOD",
+    "aod_500nm": "AOD (500 nm)",
+    "aod_550nm": "AOD (550 nm)",
+    "aod_440nm": "AOD (440 nm)",
+    "aodvisdn": "AOD",
+    # Column variables
+    "no2_trop_column": "Tropospheric NO₂ Column",
+    "no2_column": "NO₂ Column",
+    "o3_column": "O₃ Column",
+    "trop_no2": "Tropospheric NO₂",
+    # Model variables (uppercase)
+    "PM25": "PM₂.₅",
+    "O3": "O₃",
+    "NO2": "NO₂",
+    "CO": "CO",
+    "SO2": "SO₂",
+    "AODVISdn": "AOD",
+    "NO2_column": "NO₂ Column",
+}
+
+
+def format_variable_display_name(var_name: str, include_prefix: bool = True) -> str:
+    """Format a variable name for display.
+
+    Uses lookup table for known variables, otherwise applies
+    basic formatting (replace underscores, title case).
+
+    Parameters
+    ----------
+    var_name
+        Raw variable name.
+    include_prefix
+        If True, include "Observed"/"Modeled" prefix for obs_/model_ variables.
+        Set to False for shared axes (e.g., time series y-axis).
+
+    Returns
+    -------
+    str
+        Formatted display name.
+    """
+    # Strip obs_/model_ prefixes for lookup
+    base_name = var_name
+    prefix = ""
+    if var_name.startswith("obs_"):
+        base_name = var_name[4:]
+        if include_prefix:
+            prefix = "Observed "
+    elif var_name.startswith("model_"):
+        base_name = var_name[6:]
+        if include_prefix:
+            prefix = "Modeled "
+
+    # Check lookup table (try exact match first, then lowercase)
+    if base_name in VARIABLE_DISPLAY_NAMES:
+        return prefix + VARIABLE_DISPLAY_NAMES[base_name]
+    if base_name.lower() in VARIABLE_DISPLAY_NAMES:
+        return prefix + VARIABLE_DISPLAY_NAMES[base_name.lower()]
+
+    # Basic formatting: replace underscores, apply title case
+    formatted = base_name.replace("_", " ")
+    if formatted.islower() or formatted.isupper():
+        formatted = formatted.title()
+
+    return prefix + formatted
+
+
 def get_variable_label(
     dataset: xr.Dataset,
     var_name: str,
     custom_label: str | None = None,
+    include_prefix: bool = True,
 ) -> str:
     """Get a display label for a variable.
 
-    Uses custom label if provided, otherwise falls back to
-    variable attributes (long_name, standard_name) or variable name.
+    Uses custom label if provided, then checks dataset attributes
+    (display_name, long_name, standard_name), then falls back to
+    automatic formatting via lookup table.
 
     Parameters
     ----------
@@ -511,7 +601,10 @@ def get_variable_label(
     var_name
         Variable name.
     custom_label
-        Custom label to use.
+        Custom label to use (overrides all other sources).
+    include_prefix
+        If True, include "Observed"/"Modeled" prefix for obs_/model_ variables.
+        Set to False for shared axes (e.g., time series y-axis).
 
     Returns
     -------
@@ -523,12 +616,16 @@ def get_variable_label(
 
     if var_name in dataset:
         attrs = dataset[var_name].attrs
-        if "long_name" in attrs:
+        # Check for display_name first (our custom attribute)
+        if attrs.get("display_name"):
+            return str(attrs["display_name"])
+        if attrs.get("long_name"):
             return str(attrs["long_name"])
-        if "standard_name" in attrs:
+        if attrs.get("standard_name"):
             return str(attrs["standard_name"])
 
-    return var_name
+    # Fall back to automatic formatting
+    return format_variable_display_name(var_name, include_prefix=include_prefix)
 
 
 def get_variable_units(

@@ -127,6 +127,8 @@ class VariableConfig(FlexibleModel):
         Rename variable to this name.
     units
         Unit string for variable (e.g., 'ppb', 'μg/m³').
+    display_name
+        Display name for plots (e.g., 'PM₂.₅', 'O₃'). Overrides automatic formatting.
     ylabel_plot
         Y-axis label for plots.
     ty_scale
@@ -154,6 +156,7 @@ class VariableConfig(FlexibleModel):
     nan_value: float | None = None
     rename: str | None = None
     units: str | None = None
+    display_name: str | None = None
     ylabel_plot: str | None = None
     ty_scale: float | None = None
     vmin_plot: float | None = None
