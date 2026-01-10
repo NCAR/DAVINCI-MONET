@@ -69,7 +69,7 @@ def main():
     base_dir = Path(__file__).parent.parent
     config_path = base_dir / "configs" / "cesm_airnow_aeronet.yaml"
     data_dir = base_dir / "data"
-    no2_column_path = data_dir / "cesm_no2_column_20240201_20240228.nc"
+    no2_column_path = data_dir / "cesm_no2_column_20240201_20240229.nc"
 
     if not config_path.exists():
         print(f"ERROR: Config file not found: {config_path}")

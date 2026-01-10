@@ -196,6 +196,9 @@ class TimeSeriesPlotter(BasePlotter):
                 uncertainty_type,
             )
 
+        # Set x-axis limits to actual data range (avoid extra ticks beyond data)
+        ax.set_xlim(time_values.min(), time_values.max())
+
         # Formatting
         self.apply_text_style(ax)
 

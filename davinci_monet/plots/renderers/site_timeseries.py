@@ -234,6 +234,10 @@ class SiteTimeSeriesPlotter(BasePlotter):
                     ylabel = format_label_with_units(ylabel, units)
                 ax.set_ylabel(ylabel, fontsize=9)
 
+        # Set x-axis limits to actual data range (avoid extra ticks beyond data)
+        all_times = pd.to_datetime(paired_data[time_dim].values)
+        axes_flat[0].set_xlim(all_times.min(), all_times.max())
+
         # Format x-axis on bottom row
         for idx in range(n_sites):
             if idx >= n_sites - ncols:  # Bottom row

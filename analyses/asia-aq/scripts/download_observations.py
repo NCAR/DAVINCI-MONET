@@ -34,7 +34,7 @@ BBOX = {
 
 # Date range
 START_DATE = "2024-02-01"
-END_DATE = "2024-02-28"
+END_DATE = "2024-02-29"
 
 
 def download_airnow():
