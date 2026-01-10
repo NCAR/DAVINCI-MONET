@@ -123,6 +123,20 @@ pairs:
       model_var: O3
       obs_var: ozone
 
+  cesm_airnow_no2:
+    model: cesm_asiaq
+    obs: airnow
+    variable:
+      model_var: NO2
+      obs_var: no2
+
+  cesm_airnow_co:
+    model: cesm_asiaq
+    obs: airnow
+    variable:
+      model_var: CO
+      obs_var: co
+
   cesm_aeronet_aod:
     model: cesm_asiaq
     obs: aeronet
@@ -162,6 +176,42 @@ plots:
     type: scatter
     pairs: [cesm_airnow_o3]
     title: "O3 Model vs Observations"
+
+  # NO2 plots
+  no2_timeseries:
+    type: timeseries
+    pairs: [cesm_airnow_no2]
+    title: "NO2 Time Series - ASIA-AQ (Mean ± Std)"
+    show_uncertainty: true
+    aggregate_dim: site
+
+  no2_scatter:
+    type: scatter
+    pairs: [cesm_airnow_no2]
+    title: "NO2 Model vs Observations"
+
+  no2_spatial_bias:
+    type: spatial_bias
+    pairs: [cesm_airnow_no2]
+    title: "NO2 Spatial Bias"
+
+  # CO plots
+  co_timeseries:
+    type: timeseries
+    pairs: [cesm_airnow_co]
+    title: "CO Time Series - ASIA-AQ (Mean ± Std)"
+    show_uncertainty: true
+    aggregate_dim: site
+
+  co_scatter:
+    type: scatter
+    pairs: [cesm_airnow_co]
+    title: "CO Model vs Observations"
+
+  co_spatial_bias:
+    type: spatial_bias
+    pairs: [cesm_airnow_co]
+    title: "CO Spatial Bias"
 
   # AOD plots
   aod_timeseries:

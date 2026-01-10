@@ -606,6 +606,13 @@ class PlottingStage(BaseStage):
                     if plot_type == "spatial_bias":
                         plotter_config["vmin"] = -vdiff if vdiff else None
                         plotter_config["vmax"] = vdiff if vdiff else None
+                    elif plot_type == "timeseries":
+                        # Timeseries uses smart auto-scaling from data range
+                        # Don't pass vmin/vmax unless explicitly set in plot_spec
+                        if "vmin" in plot_spec:
+                            plotter_config["vmin"] = plot_spec["vmin"]
+                        if "vmax" in plot_spec:
+                            plotter_config["vmax"] = plot_spec["vmax"]
                     else:
                         plotter_config["vmin"] = vmin
                         plotter_config["vmax"] = vmax

@@ -206,7 +206,12 @@ class TimeSeriesPlotter(BasePlotter):
             units,
         )
         self.set_labels(ax, xlabel="Time", ylabel=ylabel)
-        self.set_limits(ax)
+
+        # Smart auto-scaling for y-axis
+        self._set_smart_ylim(
+            ax, paired_data, obs_var, model_var, aggregate_dim,
+            time_dim, resample, show_uncertainty, uncertainty_type
+        )
 
         # Add legend
         self.add_legend(ax)
@@ -415,6 +420,129 @@ class TimeSeriesPlotter(BasePlotter):
             color=style.model_color,
             alpha=0.2,
         )
+
+    def _set_smart_ylim(
+        self,
+        ax: matplotlib.axes.Axes,
+        paired_data: xr.Dataset,
+        obs_var: str,
+        model_var: str,
+        aggregate_dim: str | None,
+        time_dim: str,
+        resample: str | None,
+        show_uncertainty: bool,
+        uncertainty_type: str,
+    ) -> None:
+        """Set smart y-axis limits based on data range.
+
+        Computes appropriate limits from the actual data, including
+        uncertainty bands if shown. Uses vmin=0 for non-negative data
+        and adds padding to vmax.
+
+        Parameters
+        ----------
+        ax
+            Axes to configure.
+        paired_data
+            Full paired dataset.
+        obs_var, model_var
+            Variable names.
+        aggregate_dim
+            Dimension being aggregated.
+        time_dim
+            Time dimension name.
+        resample
+            Resampling frequency.
+        show_uncertainty
+            Whether uncertainty bands are shown.
+        uncertainty_type
+            Type of uncertainty ('std', 'iqr', 'range').
+        """
+        # If config specifies both limits, use them
+        if self.config.vmin is not None and self.config.vmax is not None:
+            ax.set_ylim(self.config.vmin, self.config.vmax)
+            return
+
+        # Get data for computing range
+        obs_data = paired_data[obs_var]
+        model_data = paired_data[model_var]
+
+        # Resample if needed
+        if resample:
+            obs_data = obs_data.resample({time_dim: resample}).mean()
+            model_data = model_data.resample({time_dim: resample}).mean()
+
+        # Compute the data range we need to display
+        if show_uncertainty and aggregate_dim is not None:
+            # Need to include uncertainty bands in range calculation
+            if uncertainty_type == "std":
+                obs_mean = obs_data.mean(dim=aggregate_dim)
+                obs_std = obs_data.std(dim=aggregate_dim)
+                model_mean = model_data.mean(dim=aggregate_dim)
+                model_std = model_data.std(dim=aggregate_dim)
+
+                data_min = float(min(
+                    np.nanmin(obs_mean.values - obs_std.values),
+                    np.nanmin(model_mean.values - model_std.values)
+                ))
+                data_max = float(max(
+                    np.nanmax(obs_mean.values + obs_std.values),
+                    np.nanmax(model_mean.values + model_std.values)
+                ))
+            elif uncertainty_type == "iqr":
+                data_min = float(min(
+                    np.nanmin(obs_data.quantile(0.25, dim=aggregate_dim).values),
+                    np.nanmin(model_data.quantile(0.25, dim=aggregate_dim).values)
+                ))
+                data_max = float(max(
+                    np.nanmax(obs_data.quantile(0.75, dim=aggregate_dim).values),
+                    np.nanmax(model_data.quantile(0.75, dim=aggregate_dim).values)
+                ))
+            else:  # range
+                data_min = float(min(
+                    np.nanmin(obs_data.min(dim=aggregate_dim).values),
+                    np.nanmin(model_data.min(dim=aggregate_dim).values)
+                ))
+                data_max = float(max(
+                    np.nanmax(obs_data.max(dim=aggregate_dim).values),
+                    np.nanmax(model_data.max(dim=aggregate_dim).values)
+                ))
+        else:
+            # Just use mean values
+            if aggregate_dim is not None and aggregate_dim in obs_data.dims:
+                obs_data = obs_data.mean(dim=aggregate_dim)
+                model_data = model_data.mean(dim=aggregate_dim)
+
+            data_min = float(min(np.nanmin(obs_data.values), np.nanmin(model_data.values)))
+            data_max = float(max(np.nanmax(obs_data.values), np.nanmax(model_data.values)))
+
+        # Check if raw data is non-negative (physical constraint)
+        # Use original data before aggregation to check this
+        raw_obs = paired_data[obs_var]
+        raw_model = paired_data[model_var]
+        raw_min = float(min(np.nanmin(raw_obs.values), np.nanmin(raw_model.values)))
+        is_positive_definite = raw_min >= 0
+
+        # Add padding (10% of range)
+        data_range = data_max - data_min
+        padding = data_range * 0.1 if data_range > 0 else 0.1
+
+        # Determine vmin: use 0 for non-negative data, otherwise add padding
+        if self.config.vmin is not None:
+            vmin = self.config.vmin
+        elif is_positive_definite:
+            # Non-negative data (concentrations, AOD, etc.) - start at 0
+            vmin = 0.0
+        else:
+            vmin = data_min - padding
+
+        # Determine vmax: use config or add padding
+        if self.config.vmax is not None:
+            vmax = self.config.vmax
+        else:
+            vmax = data_max + padding
+
+        ax.set_ylim(vmin, vmax)
 
 
 def plot_timeseries(
